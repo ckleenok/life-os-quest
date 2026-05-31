@@ -1322,10 +1322,6 @@ export default function App() {
                     </h2>
                     <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">{tr(selectedDayPlan, lang)}</p>
                   </div>
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    <TimePill icon={Clock3} label={tr(selectedDay.personalTime, lang)} />
-                    <TimePill icon={MessageCircleHeart} label={tr(selectedDay.parentTime, lang)} />
-                  </div>
                 </div>
 
                 <WeekPlannerCalendar
