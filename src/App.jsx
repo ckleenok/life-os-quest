@@ -1759,7 +1759,7 @@ function StatRadar({ lang, c, statTotals, maxStatTotals, overallPower }) {
         ))}
         {angles.map((angle, index) => {
           const [x, y] = pointAt(angle, 1)
-          const [labelX, labelY] = pointAt(angle, 1.28)
+          const [labelX, labelY] = pointAt(angle, 1.38)
           const stat = characterStats[index]
           return (
             <g key={stat.id}>
@@ -1770,7 +1770,7 @@ function StatRadar({ lang, c, statTotals, maxStatTotals, overallPower }) {
                 textAnchor={labelX < center - 8 ? 'end' : labelX > center + 8 ? 'start' : 'middle'}
                 dominantBaseline="middle"
                 fill="#8ea7cb"
-                fontSize="9.5"
+                fontSize="12"
                 fontWeight="800"
               >
                 {tr(stat.label, lang)}
@@ -1784,10 +1784,10 @@ function StatRadar({ lang, c, statTotals, maxStatTotals, overallPower }) {
           return <circle key={index} cx={x} cy={y} r="3.5" fill="#38bdf8" stroke="#f8fbff" strokeWidth="1" />
         })}
         <circle cx={center} cy={center} r="31" fill="#070b14" stroke="#243552" strokeWidth="2" />
-        <text x={center} y={center - 5} textAnchor="middle" fill="#8ea7cb" fontSize="10" fontWeight="800">
+        <text x={center} y={center - 5} textAnchor="middle" fill="#8ea7cb" fontSize="12" fontWeight="800">
           {c.overallPower}
         </text>
-        <text x={center} y={center + 15} textAnchor="middle" fill="#f8fbff" fontSize="20" fontWeight="900">
+        <text x={center} y={center + 16} textAnchor="middle" fill="#f8fbff" fontSize="24" fontWeight="900">
           {overallPower}
         </text>
       </svg>
