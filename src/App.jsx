@@ -1016,6 +1016,13 @@ export default function App() {
   const overallMissions = Object.entries(state.completed).filter(([key, done]) => done && missionMap[key.split('|').at(-1)]).length
   const statTotals = useMemo(() => getStatTotals(state.completed), [state.completed])
   const maxStatTotals = useMemo(() => getMaxStatTotals(), [])
+  const weeklyStatTotals = useMemo(() => {
+    const prefix = `${state.selectedVersion}|w${state.selectedWeek}|`
+    const weekCompleted = Object.fromEntries(
+      Object.entries(state.completed).filter(([key]) => key.startsWith(prefix))
+    )
+    return getStatTotals(weekCompleted)
+  }, [state.completed, state.selectedVersion, state.selectedWeek])
   const overallPower = useMemo(() => getOverallPercent(statTotals, maxStatTotals), [statTotals, maxStatTotals])
   const allVersionStats = Object.keys(versions).map((versionKey) => ({
     versionKey,
@@ -1193,21 +1200,24 @@ export default function App() {
               {c.questBadge}
             </div>
             <h1 className="text-3xl font-black tracking-normal text-slate-950 sm:text-5xl">Life Game</h1>
-            <div className="mt-4 grid gap-2">
-              {characterStats.map((stat) => {
-                const points = statTotals[stat.id] ?? 0
-                const maxPoints = maxStatTotals[stat.id] || 1
-                const pct = Math.min(100, Math.round((points / maxPoints) * 100))
-                return (
-                  <div key={stat.id} className="flex items-center gap-2">
-                    <span className="w-14 shrink-0 text-xs font-black text-slate-500">{tr(stat.label, lang)}</span>
-                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
-                      <div className={`h-full rounded-full bg-gradient-to-r ${stat.color} transition-all`} style={{ width: `${pct}%` }} />
+            <div className="mt-4">
+              <p className="mb-2 text-[11px] font-black uppercase tracking-widest text-slate-400">이번 주 획득 스탯</p>
+              <div className="grid gap-2">
+                {characterStats.map((stat) => {
+                  const weekPts = weeklyStatTotals[stat.id] ?? 0
+                  const maxWeekPts = 50
+                  const pct = Math.min(100, Math.round((weekPts / maxWeekPts) * 100))
+                  return (
+                    <div key={stat.id} className="flex items-center gap-2">
+                      <span className="w-14 shrink-0 text-xs font-black text-slate-500">{tr(stat.label, lang)}</span>
+                      <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
+                        <div className={`h-full rounded-full bg-gradient-to-r ${stat.color} transition-all`} style={{ width: `${pct}%` }} />
+                      </div>
+                      <span className="w-6 shrink-0 text-right text-xs font-black text-slate-400">{weekPts}</span>
                     </div>
-                    <span className="w-8 shrink-0 text-right text-xs font-black text-slate-400">{points}</span>
-                  </div>
-                )
-              })}
+                  )
+                })}
+              </div>
             </div>
           </div>
 
@@ -1783,6 +1793,7 @@ function StatRadar({ lang, c, statTotals, maxStatTotals, overallPower }) {
 
   return (
     <div className="mx-auto w-full max-w-[26rem] rounded-lg border border-slate-200 bg-slate-50 p-3">
+      <p className="mb-1 text-center text-[11px] font-black uppercase tracking-widest text-slate-400">전체 누적 스탯</p>
       <svg viewBox={`0 0 ${size} ${size}`} className="mx-auto w-full" role="img" aria-label={c.characterStatus} style={{ fontFamily: "'Inter', 'Pretendard', system-ui, -apple-system, sans-serif" }}>
         {[0.25, 0.5, 0.75, 1].map((scale) => (
           <polygon
