@@ -26,10 +26,10 @@ const USER_STORAGE_PREFIX = 'life-game-user-state-v1'
 const CURRENT_USER_KEY = 'life-game-current-user-v1'
 const PROGRAM_START_DATE = new Date(2026, 5, 1)
 const users = [
-  { id: 'ck',    name: 'CK',    startDate: new Date(2026, 5, 1)  },
-  { id: 'ella',  name: 'Ella',  startDate: new Date(2026, 5, 1)  },
-  { id: 'mark',  name: 'Mark',  startDate: new Date(2026, 5, 1)  },
-  { id: 'sally', name: 'Sally', startDate: new Date(2026, 6, 27) },
+  { id: 'ck',    name: 'CK' },
+  { id: 'ella',  name: 'Ella' },
+  { id: 'mark',  name: 'Mark' },
+  { id: 'sally', name: 'Sally' },
 ]
 const versionWeekOffsets = {
   v1: 0,
@@ -800,18 +800,13 @@ function getAbsoluteWeek(version, week) {
   return versionWeekOffsets[version] + week
 }
 
-function getUserStartDate(userId) {
-  return users.find((u) => u.id === userId)?.startDate ?? PROGRAM_START_DATE
+function getWeekStartDate(version, week) {
+  return addDays(PROGRAM_START_DATE, (getAbsoluteWeek(version, week) - 1) * 7)
 }
 
-function getWeekStartDate(version, week, userId) {
-  const base = userId ? getUserStartDate(userId) : PROGRAM_START_DATE
-  return addDays(base, (getAbsoluteWeek(version, week) - 1) * 7)
-}
-
-function getDayDate(version, week, dayId, userId) {
+function getDayDate(version, week, dayId) {
   const dayIndex = days.findIndex((day) => day.id === dayId)
-  return addDays(getWeekStartDate(version, week, userId), Math.max(dayIndex, 0))
+  return addDays(getWeekStartDate(version, week), Math.max(dayIndex, 0))
 }
 
 function formatDate(date) {
@@ -822,8 +817,8 @@ function formatDateRange(startDate, endDate) {
   return `${formatDate(startDate)}-${formatDate(endDate)}`
 }
 
-function getMonthDateRange(item, userId) {
-  const startDate = getWeekStartDate(item.version, item.startWeek, userId)
+function getMonthDateRange(item) {
+  const startDate = getWeekStartDate(item.version, item.startWeek)
   const endDate = addDays(startDate, 27)
   return formatDateRange(startDate, endDate)
 }
@@ -1360,7 +1355,7 @@ export default function App() {
                 <div>
                   <p className="text-sm font-black text-emerald-600">
                     {version.label} · Week {state.selectedWeek} ·{' '}
-                    {formatDateRange(getWeekStartDate(state.selectedVersion, state.selectedWeek, currentUserId), addDays(getWeekStartDate(state.selectedVersion, state.selectedWeek, currentUserId), 6))}
+                    {formatDateRange(getWeekStartDate(state.selectedVersion, state.selectedWeek), addDays(getWeekStartDate(state.selectedVersion, state.selectedWeek), 6))}
                   </p>
                   <h2 className="mt-1 text-2xl font-black text-slate-950">{tr(version.weeks[state.selectedWeek - 1], lang)}</h2>
                   <p className="mt-2 text-sm leading-6 text-slate-600">{tr(version.theme, lang)}</p>
@@ -1388,7 +1383,7 @@ export default function App() {
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="text-sm font-black text-slate-500">
-                      {tr(selectedDay.label, lang)} · {formatDate(getDayDate(state.selectedVersion, state.selectedWeek, selectedDay.id, currentUserId))} · {tr(selectedDay.title, lang)}
+                      {tr(selectedDay.label, lang)} · {formatDate(getDayDate(state.selectedVersion, state.selectedWeek, selectedDay.id))} · {tr(selectedDay.title, lang)}
                     </p>
                     <h2 className="mt-1 text-2xl font-black text-slate-950">
                       {selectedDay.rest ? c.todayRest : c.todayMissions}
@@ -1406,7 +1401,6 @@ export default function App() {
                   selectedVersion={state.selectedVersion}
                   selectedWeek={state.selectedWeek}
                   selectedDayId={selectedDay.id}
-                  userId={currentUserId}
                   onSelectDay={(dayId) => updateState({ selectedDay: dayId })}
                   onDropMission={moveMissionToDay}
                 />
@@ -1574,7 +1568,6 @@ function WeekPlannerCalendar({
   selectedVersion,
   selectedWeek,
   selectedDayId,
-  userId,
   onSelectDay,
   onDropMission,
 }) {
@@ -1606,7 +1599,7 @@ function WeekPlannerCalendar({
             const completedCount = dayMissionIds.filter((missionId) =>
               completed[getMissionKey(selectedVersion, selectedWeek, day.id, missionId)],
             ).length
-            const dayDate = formatDate(getDayDate(selectedVersion, selectedWeek, day.id, userId))
+            const dayDate = formatDate(getDayDate(selectedVersion, selectedWeek, day.id))
 
             return (
               <div
@@ -1953,7 +1946,7 @@ function ProgressDashboard({
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-sm font-black text-slate-500">
-                      {c.month} {item.month} · {versions[item.version].label} · {getMonthDateRange(item, progressUserId)}
+                      {c.month} {item.month} · {versions[item.version].label} · {getMonthDateRange(item)}
                     </p>
                     <h3 className="mt-1 text-lg font-black text-slate-950">{tr(item.title, lang)}</h3>
                   </div>
@@ -2043,7 +2036,7 @@ function CurriculumToc({ curriculum, selectedVersion, selectedWeek, lang, isOpen
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <p className="text-sm font-black text-slate-500">
-                            {c.month} {item.month} · W{item.startWeek}-{item.startWeek + 3} · {getMonthDateRange(item, currentUserId)}
+                            {c.month} {item.month} · W{item.startWeek}-{item.startWeek + 3} · {getMonthDateRange(item)}
                           </p>
                           <h3 className="mt-1 text-lg font-black text-slate-950">{tr(item.title, lang)}</h3>
                         </div>
