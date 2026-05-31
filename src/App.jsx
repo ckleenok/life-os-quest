@@ -921,6 +921,7 @@ export default function App() {
   const [state, setState] = useState(createDefaultState)
   const [isLoading, setIsLoading] = useState(true)
   const [allUsersData, setAllUsersData] = useState(null)
+  const [progressUserId, setProgressUserId] = useState(null)
   const saveTimerRef = useRef(null)
   const lang = state.lang ?? 'en'
   const c = copy[lang]
@@ -1030,6 +1031,29 @@ export default function App() {
   }))
   const totalMissionCount = allVersionStats.reduce((sum, item) => sum + item.total, 0)
   const overallPercent = totalMissionCount ? Math.round((overallMissions / totalMissionCount) * 100) : 0
+
+  // Progress tab: selected user data
+  const progressUser = useMemo(() => {
+    if (!allUsersData) return null
+    const uid = progressUserId ?? currentUserId
+    return allUsersData.find((d) => d.user.id === uid) ?? allUsersData[0]
+  }, [allUsersData, progressUserId, currentUserId])
+  const progressCompleted = progressUser?.state.completed ?? state.completed
+  const progressXp = useMemo(() =>
+    Object.entries(progressCompleted).reduce((sum, [key, done]) => {
+      if (!done) return sum
+      return sum + (missionMap[key.split('|').at(-1)]?.xp ?? 0)
+    }, 0), [progressCompleted])
+  const progressStatTotals = useMemo(() => getStatTotals(progressCompleted), [progressCompleted])
+  const progressVersionStats = useMemo(() => Object.keys(versions).map((vk) => ({ versionKey: vk, ...getVersionStats(progressCompleted, vk) })), [progressCompleted])
+  const progressOverallMissions = useMemo(() => Object.entries(progressCompleted).filter(([key, done]) => done && missionMap[key.split('|').at(-1)]).length, [progressCompleted])
+  const progressOverallPercent = totalMissionCount ? Math.round((progressOverallMissions / totalMissionCount) * 100) : 0
+  const progressLevelIndex = levels.reduce((a, l, i) => (progressXp >= l.min ? i : a), 0)
+  const progressActiveLevel = levels[progressLevelIndex]
+  const progressNextLevel = levels[progressLevelIndex + 1]
+  const progressLevelProgress = progressNextLevel
+    ? Math.min(100, Math.round(((progressXp - progressActiveLevel.min) / (progressNextLevel.min - progressActiveLevel.min)) * 100))
+    : 100
   const memoKey =
     selectedDay.id === 'sun'
       ? getMemoKey(state.selectedVersion, state.selectedWeek)
@@ -1481,11 +1505,21 @@ export default function App() {
             overallMissions={overallMissions}
             totalMissionCount={totalMissionCount}
             overallPercent={overallPercent}
-            versionStats={allVersionStats}
+            completed={progressCompleted}
+            totalXp={progressXp}
+            activeLevel={progressActiveLevel}
+            nextLevel={progressNextLevel}
+            levelProgress={progressLevelProgress}
+            statTotals={progressStatTotals}
+            overallMissions={progressOverallMissions}
+            overallPercent={progressOverallPercent}
+            versionStats={progressVersionStats}
             selectedVersion={state.selectedVersion}
             selectedWeek={state.selectedWeek}
             allUsersData={allUsersData}
             maxStatTotals={maxStatTotals}
+            progressUserId={progressUserId ?? currentUserId}
+            onSelectProgressUser={setProgressUserId}
             onSelect={(versionKey, week) =>
               updateState({
                 activeTab: 'quest',
@@ -1858,12 +1892,37 @@ function ProgressDashboard({
   selectedWeek,
   allUsersData,
   maxStatTotals,
+  progressUserId,
+  onSelectProgressUser,
   onSelect,
 }) {
   const c = copy[lang]
+  const totalMissionCountVal = versionStats.reduce((s, v) => s + v.total, 0)
   return (
     <section className="space-y-4">
       {allUsersData && <AllUsersOverview allUsersData={allUsersData} lang={lang} maxStatTotals={maxStatTotals} />}
+
+      {/* User selector tabs */}
+      {allUsersData && (
+        <div className="flex flex-wrap gap-2">
+          {allUsersData.map(({ user }) => (
+            <button
+              key={user.id}
+              type="button"
+              onClick={() => onSelectProgressUser(user.id)}
+              className={`inline-flex h-9 items-center gap-2 rounded-lg px-4 text-sm font-black transition ${
+                progressUserId === user.id
+                  ? 'bg-slate-950 text-white shadow-sm'
+                  : 'border border-slate-200 bg-white text-slate-500 hover:bg-slate-100'
+              }`}
+            >
+              <span className="grid h-5 w-5 place-items-center rounded-full bg-emerald-500 text-[10px] text-white">{user.name[0]}</span>
+              {user.name}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
@@ -1929,6 +1988,7 @@ function ProgressDashboard({
       </div>
 
       <CharacterStatus c={c} lang={lang} statTotals={statTotals} />
+      <TrendCharts completed={completed} lang={lang} />
 
       <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
         <div>
@@ -2188,6 +2248,102 @@ function AllUsersOverview({ allUsersData, lang, maxStatTotals }) {
             </div>
           )
         })}
+      </div>
+    </div>
+  )
+}
+
+function TrendCharts({ completed, lang }) {
+  const c = copy[lang]
+
+  // Weekly trend: all 24 weeks across v1/v2/v3
+  const weeklyData = Object.keys(versions).flatMap((vk) =>
+    versions[vk].weeks.map((weekLabel, i) => {
+      const week = i + 1
+      const stats = getWeekStats(completed, vk, week)
+      return {
+        label: `${versions[vk].label} W${week}`,
+        shortLabel: `W${week}`,
+        version: vk,
+        percent: stats.percent,
+        done: stats.done,
+        total: stats.total,
+      }
+    })
+  )
+
+  // Monthly trend: 6 months from curriculum
+  const monthlyData = [
+    { month: 1, version: 'v1', startWeek: 1 },
+    { month: 2, version: 'v1', startWeek: 5 },
+    { month: 3, version: 'v2', startWeek: 1 },
+    { month: 4, version: 'v2', startWeek: 5 },
+    { month: 5, version: 'v3', startWeek: 1 },
+    { month: 6, version: 'v3', startWeek: 5 },
+  ].map((item) => {
+    const stats = getMonthStats(completed, item)
+    return { label: `Month ${item.month}`, percent: stats.percent, done: stats.done, total: stats.total }
+  })
+
+  const versionColors = { v1: 'bg-sky-500', v2: 'bg-violet-500', v3: 'bg-emerald-500' }
+  const versionBorder = { v1: 'border-sky-200', v2: 'border-violet-200', v3: 'border-emerald-200' }
+
+  return (
+    <div className="grid gap-4 lg:grid-cols-2">
+      {/* Weekly Trend */}
+      <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <p className="text-sm font-black text-emerald-600">Weekly Trend</p>
+        <h2 className="mt-1 text-xl font-black text-slate-950">주간 달성률</h2>
+        <div className="mt-4 grid grid-cols-3 gap-3">
+          {['v1', 'v2', 'v3'].map((vk) => (
+            <div key={vk}>
+              <p className={`mb-2 text-xs font-black ${vk === 'v1' ? 'text-sky-600' : vk === 'v2' ? 'text-violet-600' : 'text-emerald-600'}`}>
+                {versions[vk].label}
+              </p>
+              <div className="grid gap-1.5">
+                {weeklyData.filter((w) => w.version === vk).map((w) => (
+                  <div key={w.label}>
+                    <div className="flex items-center justify-between mb-0.5">
+                      <span className="text-[11px] font-bold text-slate-500">{w.shortLabel}</span>
+                      <span className="text-[11px] font-black text-slate-700">{w.percent}%</span>
+                    </div>
+                    <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                      <div
+                        className={`h-full rounded-full transition-all ${versionColors[vk]}`}
+                        style={{ width: `${w.percent}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Monthly Trend */}
+      <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <p className="text-sm font-black text-emerald-600">Monthly Trend</p>
+        <h2 className="mt-1 text-xl font-black text-slate-950">월별 달성률</h2>
+        <div className="mt-4 grid gap-3">
+          {monthlyData.map((m, i) => {
+            const vk = i < 2 ? 'v1' : i < 4 ? 'v2' : 'v3'
+            return (
+              <div key={m.label}>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-sm font-black text-slate-700">{m.label}</span>
+                  <span className="text-sm font-black text-slate-500">{m.done}/{m.total} · {m.percent}%</span>
+                </div>
+                <div className="h-3 overflow-hidden rounded-full bg-slate-100">
+                  <div
+                    className={`h-full rounded-full transition-all ${versionColors[vk]}`}
+                    style={{ width: `${m.percent}%` }}
+                  />
+                </div>
+              </div>
+            )
+          })}
+        </div>
       </div>
     </div>
   )
