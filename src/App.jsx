@@ -26,10 +26,10 @@ const USER_STORAGE_PREFIX = 'life-game-user-state-v1'
 const CURRENT_USER_KEY = 'life-game-current-user-v1'
 const PROGRAM_START_DATE = new Date(2026, 5, 1)
 const users = [
-  { id: 'ck', name: 'CK' },
-  { id: 'ella', name: 'Ella' },
-  { id: 'mark', name: 'Mark' },
-  { id: 'sally', name: 'Sally' },
+  { id: 'ck',    name: 'CK',    startVersion: 'v1', startWeek: 1 },
+  { id: 'ella',  name: 'Ella',  startVersion: 'v1', startWeek: 1 },
+  { id: 'mark',  name: 'Mark',  startVersion: 'v1', startWeek: 1 },
+  { id: 'sally', name: 'Sally', startVersion: 'v2', startWeek: 1 },
 ]
 const versionWeekOffsets = {
   v1: 0,
@@ -616,17 +616,36 @@ const levels = [
   { name: { en: 'Lv.6 Life-Ready Master', ko: 'Lv.6 생활 설계 마스터' }, min: 1800 },
 ]
 
-const createDefaultState = () => ({
-  selectedVersion: 'v1',
-  selectedWeek: 1,
-  selectedDay: 'mon',
-  activeTab: 'quest',
-  lang: 'en',
-  showToc: true,
-  completed: {},
-  memos: {},
-  schedules: {},
-})
+const createDefaultState = (userId) => {
+  const user = users.find((u) => u.id === userId)
+  return {
+    selectedVersion: user?.startVersion ?? 'v1',
+    selectedWeek: user?.startWeek ?? 1,
+    selectedDay: 'mon',
+    activeTab: 'quest',
+    lang: 'en',
+    showToc: true,
+    completed: {},
+    memos: {},
+    schedules: {},
+  }
+}
+
+function getUserStartAbsWeek(userId) {
+  const user = users.find((u) => u.id === userId)
+  return getAbsoluteWeek(user?.startVersion ?? 'v1', user?.startWeek ?? 1)
+}
+
+function getAccessibleVersionWeeks(userId) {
+  // Returns list of {vk, week} this user can access (from their start onward)
+  const startAbs = getUserStartAbsWeek(userId)
+  return Object.keys(versions).flatMap((vk) =>
+    versions[vk].weeks.map((_, i) => {
+      const week = i + 1
+      return { vk, week, absWeek: getAbsoluteWeek(vk, week) }
+    })
+  ).filter((w) => w.absWeek >= startAbs)
+}
 
 function getUserStorageKey(userId) {
   return `${USER_STORAGE_PREFIX}:${userId}`
@@ -654,12 +673,12 @@ function loadState(userId) {
       const legacyState = localStorage.getItem(STORAGE_KEY)
       if (legacyState) {
         localStorage.setItem(userKey, legacyState)
-        return migrateState({ ...createDefaultState(), ...JSON.parse(legacyState) })
+        return migrateState({ ...createDefaultState(userId), ...JSON.parse(legacyState) })
       }
     }
-    return saved ? migrateState({ ...createDefaultState(), ...JSON.parse(saved) }) : createDefaultState()
+    return saved ? migrateState({ ...createDefaultState(userId), ...JSON.parse(saved) }) : createDefaultState(userId)
   } catch {
-    return createDefaultState()
+    return createDefaultState(userId)
   }
 }
 
@@ -878,12 +897,14 @@ function getStatTotals(completed) {
   return totals
 }
 
-function getMaxStatTotals() {
+function getMaxStatTotals(userId) {
   const totals = Object.fromEntries(characterStats.map((stat) => [stat.id, 0]))
+  const accessible = userId ? getAccessibleVersionWeeks(userId) : null
 
   Object.keys(versions).forEach((versionKey) => {
     versions[versionKey].weeks.forEach((_, index) => {
       const week = index + 1
+      if (accessible && !accessible.some((a) => a.vk === versionKey && a.week === week)) return
       days.forEach((day) => {
         getMissionIdsForDay(versionKey, week, day).forEach((missionId) => {
           const rewards = missionMap[missionId]?.statRewards ?? {}
@@ -896,6 +917,16 @@ function getMaxStatTotals() {
   })
 
   return totals
+}
+
+function getTotalMissionCount(userId) {
+  const accessible = userId ? getAccessibleVersionWeeks(userId) : null
+  return Object.keys(versions).reduce((sum, vk) =>
+    sum + versions[vk].weeks.reduce((s, _, i) => {
+      const week = i + 1
+      if (accessible && !accessible.some((a) => a.vk === vk && a.week === week)) return s
+      return s + days.reduce((d, day) => d + getMissionIdsForDay(vk, week, day).length, 0)
+    }, 0), 0)
 }
 
 function getStatLevel(points) {
@@ -918,7 +949,7 @@ function getOverallPercent(statTotals, maxStatTotals) {
 
 export default function App() {
   const [currentUserId, setCurrentUserId] = useState(loadCurrentUserId)
-  const [state, setState] = useState(createDefaultState)
+  const [state, setState] = useState(() => createDefaultState(loadCurrentUserId()))
   const [isLoading, setIsLoading] = useState(true)
   const [allUsersData, setAllUsersData] = useState(null)
   const [progressUserId, setProgressUserId] = useState(null)
@@ -1016,7 +1047,7 @@ export default function App() {
   ).length
   const overallMissions = Object.entries(state.completed).filter(([key, done]) => done && missionMap[key.split('|').at(-1)]).length
   const statTotals = useMemo(() => getStatTotals(state.completed), [state.completed])
-  const maxStatTotals = useMemo(() => getMaxStatTotals(), [])
+  const maxStatTotals = useMemo(() => getMaxStatTotals(currentUserId), [currentUserId])
   const weeklyStatTotals = useMemo(() => {
     const prefix = `${state.selectedVersion}|w${state.selectedWeek}|`
     const weekCompleted = Object.fromEntries(
@@ -1029,7 +1060,7 @@ export default function App() {
     versionKey,
     ...getVersionStats(state.completed, versionKey),
   }))
-  const totalMissionCount = allVersionStats.reduce((sum, item) => sum + item.total, 0)
+  const totalMissionCount = useMemo(() => getTotalMissionCount(currentUserId), [currentUserId])
   const overallPercent = totalMissionCount ? Math.round((overallMissions / totalMissionCount) * 100) : 0
 
   // Progress tab: selected user data
@@ -1900,7 +1931,7 @@ function ProgressDashboard({
   const totalMissionCountVal = versionStats.reduce((s, v) => s + v.total, 0)
   return (
     <section className="space-y-4">
-      {allUsersData && <AllUsersOverview allUsersData={allUsersData} lang={lang} maxStatTotals={maxStatTotals} />}
+      {allUsersData && <AllUsersOverview allUsersData={allUsersData} lang={lang} />}
 
       {/* User selector tabs */}
       {allUsersData && (
@@ -2117,11 +2148,7 @@ function ActivitySummary({ days, selectedVersion, selectedWeek, selectedDayId, l
   )
 }
 
-function AllUsersOverview({ allUsersData, lang, maxStatTotals }) {
-  const totalMissionCount = Object.keys(versions).reduce((sum, vk) =>
-    sum + versions[vk].weeks.reduce((s, _, i) =>
-      s + days.reduce((d, day) => d + getMissionIdsForDay(vk, i + 1, day).length, 0), 0), 0)
-
+function AllUsersOverview({ allUsersData, lang }) {
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
       <p className="text-sm font-black text-emerald-600">All Members</p>
@@ -2130,13 +2157,15 @@ function AllUsersOverview({ allUsersData, lang, maxStatTotals }) {
       <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {allUsersData.map(({ user, state: userState }) => {
           const completed = userState.completed ?? {}
+          const userTotalMissions = getTotalMissionCount(user.id)
+          const userMaxStats = getMaxStatTotals(user.id)
           const xp = Object.entries(completed).reduce((sum, [key, done]) => {
             if (!done) return sum
             const missionId = key.split('|').at(-1)
             return sum + (missionMap[missionId]?.xp ?? 0)
           }, 0)
           const doneMissions = Object.entries(completed).filter(([key, done]) => done && missionMap[key.split('|').at(-1)]).length
-          const percent = totalMissionCount ? Math.round((doneMissions / totalMissionCount) * 100) : 0
+          const percent = userTotalMissions ? Math.round((doneMissions / userTotalMissions) * 100) : 0
           const levelIndex = levels.reduce((a, l, i) => (xp >= l.min ? i : a), 0)
           const level = levels[levelIndex]
           const statTotals = getStatTotals(completed)
@@ -2164,13 +2193,13 @@ function AllUsersOverview({ allUsersData, lang, maxStatTotals }) {
                 <div className="h-2.5 overflow-hidden rounded-full bg-slate-200">
                   <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${percent}%` }} />
                 </div>
-                <p className="mt-1 text-xs font-bold text-slate-400">{doneMissions}/{totalMissionCount} 미션</p>
+                <p className="mt-1 text-xs font-bold text-slate-400">{doneMissions}/{userTotalMissions} 미션</p>
               </div>
 
               <div className="mt-4 grid gap-1.5">
                 {characterStats.map((stat) => {
                   const pts = statTotals[stat.id] ?? 0
-                  const maxPts = maxStatTotals[stat.id] || 1
+                  const maxPts = userMaxStats[stat.id] || 1
                   const pct = Math.min(100, Math.round((pts / maxPts) * 100))
                   return (
                     <div key={stat.id} className="flex items-center gap-2">
