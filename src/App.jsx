@@ -213,6 +213,7 @@ const curriculum = [
     startWeek: 1,
     title: { en: 'Designing My Life I', ko: '내 인생 설계하기 I' },
     goal: { en: 'Start designing everyday life and direction', ko: '생활과 삶의 방향을 스스로 설계하기' },
+    statFocus: ['leadership', 'vitality', 'intelligence'],
     topics: [
       { en: 'Daily Life Strategy', ko: '생활 전략' },
       { en: 'Life Direction', ko: '삶의 방향' },
@@ -226,6 +227,7 @@ const curriculum = [
     startWeek: 5,
     title: { en: 'Designing My Life II', ko: '내 인생 설계하기 II' },
     goal: { en: 'Turn life design into a personal manual', ko: '인생 설계를 나만의 매뉴얼로 정리하기' },
+    statFocus: ['charisma', 'leadership', 'creativity'],
     topics: [
       { en: 'Relationships', ko: '인간관계와 태도' },
       { en: 'Habits', ko: '시간 관리와 습관' },
@@ -239,6 +241,7 @@ const curriculum = [
     startWeek: 1,
     title: { en: 'Understanding the World I', ko: '세상 이해하기 I' },
     goal: { en: 'Build the first half of a world map', ko: '세상의 기본 지도를 만들기' },
+    statFocus: ['intelligence', 'leadership'],
     topics: [
       { en: 'Economics', ko: '경제 기초' },
       { en: 'Capitalism', ko: '돈과 자본주의' },
@@ -252,6 +255,7 @@ const curriculum = [
     startWeek: 5,
     title: { en: 'Understanding the World II', ko: '세상 이해하기 II' },
     goal: { en: 'Explain how the world moves', ko: '세상이 어떻게 움직이는지 설명하기' },
+    statFocus: ['intelligence', 'creativity', 'charisma'],
     topics: [
       { en: 'Inequality', ko: '사회 문제와 불평등' },
       { en: 'Critical News', ko: '뉴스 읽기와 비판적 사고' },
@@ -265,6 +269,7 @@ const curriculum = [
     startWeek: 1,
     title: { en: 'Expressing and Building I', ko: '생각을 표현하고 만들기 I' },
     goal: { en: 'Express ideas through words, discussion, and tools', ko: '말, 글, 도구로 생각을 표현하기' },
+    statFocus: ['creativity', 'charisma', 'intelligence'],
     topics: [
       { en: 'Writing', ko: '글쓰기와 논리' },
       { en: 'Presentation', ko: '발표와 토론' },
@@ -278,6 +283,7 @@ const curriculum = [
     startWeek: 5,
     title: { en: 'Expressing and Building II', ko: '생각을 표현하고 만들기 II' },
     goal: { en: 'Publish my thinking to the world', ko: '내 생각을 세상에 공개하기' },
+    statFocus: ['creativity', 'intelligence', 'leadership'],
     topics: [
       { en: 'Web Page', ko: '웹페이지 만들기' },
       { en: 'Economic News', ko: '경제 뉴스 분석' },
@@ -2011,7 +2017,17 @@ function CurriculumToc({ curriculum, selectedVersion, selectedWeek, lang, isOpen
                         <span className="rounded-full bg-slate-900 px-2.5 py-1 text-xs font-black text-white">{versionInfo.label}</span>
                       </div>
                       <p className="mt-3 text-sm font-bold leading-6 text-slate-600">{tr(item.goal, lang)}</p>
-                      <div className="mt-3 flex flex-wrap gap-2">
+                      <div className="mt-3 flex flex-wrap gap-1.5">
+                        {(item.statFocus ?? []).map((statId) => {
+                          const stat = statMap[statId]
+                          return (
+                            <span key={statId} className={`inline-flex items-center gap-1 rounded-full bg-gradient-to-r ${stat.color} px-2.5 py-1 text-xs font-black text-white shadow-sm`}>
+                              ↑ {tr(stat.label, lang)}
+                            </span>
+                          )
+                        })}
+                      </div>
+                      <div className="mt-2 flex flex-wrap gap-2">
                         {item.topics.map((topic) => (
                           <span key={tr(topic, 'en')} className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-slate-500">
                             {tr(topic, lang)}
