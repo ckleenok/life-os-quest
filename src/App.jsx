@@ -1175,6 +1175,22 @@ export default function App() {
               {c.questBadge}
             </div>
             <h1 className="text-3xl font-black tracking-normal text-slate-950 sm:text-5xl">Life Game</h1>
+            <div className="mt-4 grid gap-2">
+              {characterStats.map((stat) => {
+                const points = statTotals[stat.id] ?? 0
+                const maxPoints = maxStatTotals[stat.id] || 1
+                const pct = Math.min(100, Math.round((points / maxPoints) * 100))
+                return (
+                  <div key={stat.id} className="flex items-center gap-2">
+                    <span className="w-14 shrink-0 text-xs font-black text-slate-500">{tr(stat.label, lang)}</span>
+                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
+                      <div className={`h-full rounded-full bg-gradient-to-r ${stat.color} transition-all`} style={{ width: `${pct}%` }} />
+                    </div>
+                    <span className="w-8 shrink-0 text-right text-xs font-black text-slate-400">{points}</span>
+                  </div>
+                )
+              })}
+            </div>
           </div>
 
           <StatRadar lang={lang} c={c} statTotals={statTotals} maxStatTotals={maxStatTotals} overallPower={overallPower} />
