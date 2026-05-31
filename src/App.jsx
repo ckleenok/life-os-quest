@@ -1728,9 +1728,9 @@ function CharacterStatus({ c, lang, statTotals, compact = false }) {
 }
 
 function StatRadar({ lang, c, statTotals, maxStatTotals, overallPower }) {
-  const size = 260
+  const size = 340
   const center = size / 2
-  const radius = 78
+  const radius = 88
   const angles = characterStats.map((_, index) => -Math.PI / 2 + (index * 2 * Math.PI) / characterStats.length)
   const pointAt = (angle, scale = 1) => [
     center + Math.cos(angle) * radius * scale,
@@ -1746,45 +1746,47 @@ function StatRadar({ lang, c, statTotals, maxStatTotals, overallPower }) {
     .join(' ')
 
   return (
-    <div className="mx-auto w-full max-w-[24rem] rounded-lg border border-slate-200 bg-slate-50 p-3">
-      <svg viewBox={`0 0 ${size} ${size}`} className="mx-auto h-56 w-full max-w-72 overflow-visible" role="img" aria-label={c.characterStatus}>
+    <div className="mx-auto w-full max-w-[26rem] rounded-lg border border-slate-200 bg-slate-50 p-3">
+      <svg viewBox={`0 0 ${size} ${size}`} className="mx-auto w-full" role="img" aria-label={c.characterStatus} style={{ fontFamily: "'Inter', 'Pretendard', system-ui, -apple-system, sans-serif" }}>
         {[0.25, 0.5, 0.75, 1].map((scale) => (
           <polygon
             key={scale}
             points={angles.map((angle) => pointAt(angle, scale).join(',')).join(' ')}
             fill="none"
-            stroke="rgba(142, 167, 203, 0.28)"
-            strokeWidth="1"
+            stroke="rgba(142, 167, 203, 0.3)"
+            strokeWidth="1.2"
           />
         ))}
         {angles.map((angle, index) => {
           const [x, y] = pointAt(angle, 1)
-          const [labelX, labelY] = pointAt(angle, 1.52)
+          const [labelX, labelY] = pointAt(angle, 1.45)
           const stat = characterStats[index]
+          const anchor = labelX < center - 10 ? 'end' : labelX > center + 10 ? 'start' : 'middle'
           return (
             <g key={stat.id}>
-              <line x1={center} y1={center} x2={x} y2={y} stroke="rgba(142, 167, 203, 0.24)" strokeWidth="1" />
+              <line x1={center} y1={center} x2={x} y2={y} stroke="rgba(142, 167, 203, 0.25)" strokeWidth="1" />
               <text
                 x={labelX}
                 y={labelY}
-                textAnchor={labelX < center - 8 ? 'end' : labelX > center + 8 ? 'start' : 'middle'}
+                textAnchor={anchor}
                 dominantBaseline="middle"
-                fill="#8ea7cb"
-                fontSize="18"
-                fontWeight="800"
+                fill="#e2eaf6"
+                fontSize="16"
+                fontWeight="700"
+                letterSpacing="-0.3"
               >
                 {tr(stat.label, lang)}
               </text>
             </g>
           )
         })}
-        <polygon points={polygon} fill="rgba(0, 215, 192, 0.28)" stroke="#00d7c0" strokeWidth="3" />
+        <polygon points={polygon} fill="rgba(0, 215, 192, 0.25)" stroke="#00d7c0" strokeWidth="2.5" />
         {polygon.split(' ').map((pair, index) => {
           const [x, y] = pair.split(',').map(Number)
-          return <circle key={index} cx={x} cy={y} r="3.5" fill="#38bdf8" stroke="#f8fbff" strokeWidth="1" />
+          return <circle key={index} cx={x} cy={y} r="4" fill="#38bdf8" stroke="#f8fbff" strokeWidth="1.5" />
         })}
-        <circle cx={center} cy={center} r="31" fill="#070b14" stroke="#243552" strokeWidth="2" />
-        <text x={center} y={center + 10} textAnchor="middle" fill="#f8fbff" fontSize="24" fontWeight="900">
+        <circle cx={center} cy={center} r="32" fill="#070b14" stroke="#2d4a72" strokeWidth="2" />
+        <text x={center} y={center + 9} textAnchor="middle" dominantBaseline="middle" fill="#ffffff" fontSize="26" fontWeight="900" letterSpacing="-1">
           {overallPower}
         </text>
       </svg>
