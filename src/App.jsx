@@ -1923,30 +1923,6 @@ function ProgressDashboard({
         </div>
       )}
 
-      <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <p className="text-sm font-black text-emerald-600">{c.progress}</p>
-            <h2 className="mt-1 text-2xl font-black text-slate-950">{c.progressTitle}</h2>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-3 lg:min-w-[560px]">
-            <Stat label={c.totalComplete} value={`${overallMissions}/${totalMissionCount}`} />
-            <Stat label={c.totalProgress} value={`${overallPercent}%`} />
-            <Stat label={c.totalXp} value={`${totalXp}`} />
-          </div>
-        </div>
-
-        <div className="mt-5 rounded-lg border border-slate-200 bg-slate-50 p-4">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm font-semibold text-slate-500">{c.currentLevel}</p>
-              <p className="mt-1 text-xl font-black text-slate-950">{tr(activeLevel.name, lang)}</p>
-            </div>
-            <p className="text-sm font-bold text-slate-500">{nextLevel ? c.untilXp(nextLevel.min, levelProgress) : c.highestLevel}</p>
-          </div>
-          <ProgressBar percent={levelProgress} className="mt-4" />
-        </div>
-      </div>
 
       <div className="grid gap-4 md:grid-cols-3">
         {versionStats.map((stat) => (
