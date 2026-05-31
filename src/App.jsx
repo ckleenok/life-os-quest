@@ -1924,44 +1924,6 @@ function ProgressDashboard({
       )}
 
 
-      <div className="grid gap-4 md:grid-cols-3">
-        {versionStats.map((stat) => (
-          <div key={stat.versionKey} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-sm font-black text-slate-500">{versions[stat.versionKey].label}</p>
-                <h3 className="mt-1 text-lg font-black text-slate-950">{tr(versions[stat.versionKey].title, lang)}</h3>
-              </div>
-              <span className="rounded-full bg-slate-900 px-2.5 py-1 text-xs font-black text-white">{stat.percent}%</span>
-            </div>
-            <ProgressBar percent={stat.percent} className="mt-4" />
-            <p className="mt-2 text-sm font-bold text-slate-500">
-              {stat.done}/{stat.total} {c.missions}
-            </p>
-
-            <div className="mt-4 grid grid-cols-4 gap-2">
-              {stat.weeks.map((week, index) => {
-                const weekNumber = index + 1
-                const active = selectedVersion === stat.versionKey && selectedWeek === weekNumber
-                return (
-                  <button
-                    key={weekNumber}
-                    type="button"
-                    onClick={() => onSelect(stat.versionKey, weekNumber)}
-                    className={`rounded-lg border p-2 text-center transition ${
-                      active ? 'border-emerald-400 bg-emerald-50' : 'border-slate-200 bg-slate-50 hover:border-slate-400'
-                    }`}
-                  >
-                    <span className="block text-xs font-black text-slate-600">W{weekNumber}</span>
-                    <span className="mt-0.5 block text-[11px] font-bold text-slate-400">{formatDate(getWeekStartDate(stat.versionKey, weekNumber))}</span>
-                    <span className="mt-1 block text-sm font-black text-slate-950">{week.percent}%</span>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-        ))}
-      </div>
 
       <CharacterStatus c={c} lang={lang} statTotals={statTotals} />
       <TrendCharts completed={completed} lang={lang} />
