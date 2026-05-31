@@ -26,10 +26,10 @@ const USER_STORAGE_PREFIX = 'life-game-user-state-v1'
 const CURRENT_USER_KEY = 'life-game-current-user-v1'
 const PROGRAM_START_DATE = new Date(2026, 5, 1)
 const users = [
-  { id: 'ck',    name: 'CK',    startVersion: 'v1', startWeek: 1 },
-  { id: 'ella',  name: 'Ella',  startVersion: 'v1', startWeek: 1 },
-  { id: 'mark',  name: 'Mark',  startVersion: 'v1', startWeek: 1 },
-  { id: 'sally', name: 'Sally', startVersion: 'v2', startWeek: 1 },
+  { id: 'ck',    name: 'CK',    startDate: new Date(2026, 5, 1)  },
+  { id: 'ella',  name: 'Ella',  startDate: new Date(2026, 5, 1)  },
+  { id: 'mark',  name: 'Mark',  startDate: new Date(2026, 5, 1)  },
+  { id: 'sally', name: 'Sally', startDate: new Date(2026, 6, 27) },
 ]
 const versionWeekOffsets = {
   v1: 0,
@@ -616,36 +616,17 @@ const levels = [
   { name: { en: 'Lv.6 Life-Ready Master', ko: 'Lv.6 생활 설계 마스터' }, min: 1800 },
 ]
 
-const createDefaultState = (userId) => {
-  const user = users.find((u) => u.id === userId)
-  return {
-    selectedVersion: user?.startVersion ?? 'v1',
-    selectedWeek: user?.startWeek ?? 1,
-    selectedDay: 'mon',
-    activeTab: 'quest',
-    lang: 'en',
-    showToc: true,
-    completed: {},
-    memos: {},
-    schedules: {},
-  }
-}
-
-function getUserStartAbsWeek(userId) {
-  const user = users.find((u) => u.id === userId)
-  return getAbsoluteWeek(user?.startVersion ?? 'v1', user?.startWeek ?? 1)
-}
-
-function getAccessibleVersionWeeks(userId) {
-  // Returns list of {vk, week} this user can access (from their start onward)
-  const startAbs = getUserStartAbsWeek(userId)
-  return Object.keys(versions).flatMap((vk) =>
-    versions[vk].weeks.map((_, i) => {
-      const week = i + 1
-      return { vk, week, absWeek: getAbsoluteWeek(vk, week) }
-    })
-  ).filter((w) => w.absWeek >= startAbs)
-}
+const createDefaultState = () => ({
+  selectedVersion: 'v1',
+  selectedWeek: 1,
+  selectedDay: 'mon',
+  activeTab: 'quest',
+  lang: 'en',
+  showToc: true,
+  completed: {},
+  memos: {},
+  schedules: {},
+})
 
 function getUserStorageKey(userId) {
   return `${USER_STORAGE_PREFIX}:${userId}`
@@ -673,12 +654,12 @@ function loadState(userId) {
       const legacyState = localStorage.getItem(STORAGE_KEY)
       if (legacyState) {
         localStorage.setItem(userKey, legacyState)
-        return migrateState({ ...createDefaultState(userId), ...JSON.parse(legacyState) })
+        return migrateState({ ...createDefaultState(), ...JSON.parse(legacyState) })
       }
     }
-    return saved ? migrateState({ ...createDefaultState(userId), ...JSON.parse(saved) }) : createDefaultState(userId)
+    return saved ? migrateState({ ...createDefaultState(), ...JSON.parse(saved) }) : createDefaultState()
   } catch {
-    return createDefaultState(userId)
+    return createDefaultState()
   }
 }
 
@@ -819,13 +800,18 @@ function getAbsoluteWeek(version, week) {
   return versionWeekOffsets[version] + week
 }
 
-function getWeekStartDate(version, week) {
-  return addDays(PROGRAM_START_DATE, (getAbsoluteWeek(version, week) - 1) * 7)
+function getUserStartDate(userId) {
+  return users.find((u) => u.id === userId)?.startDate ?? PROGRAM_START_DATE
 }
 
-function getDayDate(version, week, dayId) {
+function getWeekStartDate(version, week, userId) {
+  const base = userId ? getUserStartDate(userId) : PROGRAM_START_DATE
+  return addDays(base, (getAbsoluteWeek(version, week) - 1) * 7)
+}
+
+function getDayDate(version, week, dayId, userId) {
   const dayIndex = days.findIndex((day) => day.id === dayId)
-  return addDays(getWeekStartDate(version, week), Math.max(dayIndex, 0))
+  return addDays(getWeekStartDate(version, week, userId), Math.max(dayIndex, 0))
 }
 
 function formatDate(date) {
@@ -836,8 +822,8 @@ function formatDateRange(startDate, endDate) {
   return `${formatDate(startDate)}-${formatDate(endDate)}`
 }
 
-function getMonthDateRange(item) {
-  const startDate = getWeekStartDate(item.version, item.startWeek)
+function getMonthDateRange(item, userId) {
+  const startDate = getWeekStartDate(item.version, item.startWeek, userId)
   const endDate = addDays(startDate, 27)
   return formatDateRange(startDate, endDate)
 }
@@ -897,14 +883,12 @@ function getStatTotals(completed) {
   return totals
 }
 
-function getMaxStatTotals(userId) {
+function getMaxStatTotals() {
   const totals = Object.fromEntries(characterStats.map((stat) => [stat.id, 0]))
-  const accessible = userId ? getAccessibleVersionWeeks(userId) : null
 
   Object.keys(versions).forEach((versionKey) => {
     versions[versionKey].weeks.forEach((_, index) => {
       const week = index + 1
-      if (accessible && !accessible.some((a) => a.vk === versionKey && a.week === week)) return
       days.forEach((day) => {
         getMissionIdsForDay(versionKey, week, day).forEach((missionId) => {
           const rewards = missionMap[missionId]?.statRewards ?? {}
@@ -917,16 +901,6 @@ function getMaxStatTotals(userId) {
   })
 
   return totals
-}
-
-function getTotalMissionCount(userId) {
-  const accessible = userId ? getAccessibleVersionWeeks(userId) : null
-  return Object.keys(versions).reduce((sum, vk) =>
-    sum + versions[vk].weeks.reduce((s, _, i) => {
-      const week = i + 1
-      if (accessible && !accessible.some((a) => a.vk === vk && a.week === week)) return s
-      return s + days.reduce((d, day) => d + getMissionIdsForDay(vk, week, day).length, 0)
-    }, 0), 0)
 }
 
 function getStatLevel(points) {
@@ -949,7 +923,7 @@ function getOverallPercent(statTotals, maxStatTotals) {
 
 export default function App() {
   const [currentUserId, setCurrentUserId] = useState(loadCurrentUserId)
-  const [state, setState] = useState(() => createDefaultState(loadCurrentUserId()))
+  const [state, setState] = useState(createDefaultState)
   const [isLoading, setIsLoading] = useState(true)
   const [allUsersData, setAllUsersData] = useState(null)
   const [progressUserId, setProgressUserId] = useState(null)
@@ -1047,7 +1021,7 @@ export default function App() {
   ).length
   const overallMissions = Object.entries(state.completed).filter(([key, done]) => done && missionMap[key.split('|').at(-1)]).length
   const statTotals = useMemo(() => getStatTotals(state.completed), [state.completed])
-  const maxStatTotals = useMemo(() => getMaxStatTotals(currentUserId), [currentUserId])
+  const maxStatTotals = useMemo(() => getMaxStatTotals(), [])
   const weeklyStatTotals = useMemo(() => {
     const prefix = `${state.selectedVersion}|w${state.selectedWeek}|`
     const weekCompleted = Object.fromEntries(
@@ -1060,7 +1034,7 @@ export default function App() {
     versionKey,
     ...getVersionStats(state.completed, versionKey),
   }))
-  const totalMissionCount = useMemo(() => getTotalMissionCount(currentUserId), [currentUserId])
+  const totalMissionCount = allVersionStats.reduce((sum, item) => sum + item.total, 0)
   const overallPercent = totalMissionCount ? Math.round((overallMissions / totalMissionCount) * 100) : 0
 
   // Progress tab: selected user data
@@ -1386,7 +1360,7 @@ export default function App() {
                 <div>
                   <p className="text-sm font-black text-emerald-600">
                     {version.label} · Week {state.selectedWeek} ·{' '}
-                    {formatDateRange(getWeekStartDate(state.selectedVersion, state.selectedWeek), addDays(getWeekStartDate(state.selectedVersion, state.selectedWeek), 6))}
+                    {formatDateRange(getWeekStartDate(state.selectedVersion, state.selectedWeek, currentUserId), addDays(getWeekStartDate(state.selectedVersion, state.selectedWeek, currentUserId), 6))}
                   </p>
                   <h2 className="mt-1 text-2xl font-black text-slate-950">{tr(version.weeks[state.selectedWeek - 1], lang)}</h2>
                   <p className="mt-2 text-sm leading-6 text-slate-600">{tr(version.theme, lang)}</p>
@@ -1414,7 +1388,7 @@ export default function App() {
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="text-sm font-black text-slate-500">
-                      {tr(selectedDay.label, lang)} · {formatDate(getDayDate(state.selectedVersion, state.selectedWeek, selectedDay.id))} · {tr(selectedDay.title, lang)}
+                      {tr(selectedDay.label, lang)} · {formatDate(getDayDate(state.selectedVersion, state.selectedWeek, selectedDay.id, currentUserId))} · {tr(selectedDay.title, lang)}
                     </p>
                     <h2 className="mt-1 text-2xl font-black text-slate-950">
                       {selectedDay.rest ? c.todayRest : c.todayMissions}
@@ -1432,6 +1406,7 @@ export default function App() {
                   selectedVersion={state.selectedVersion}
                   selectedWeek={state.selectedWeek}
                   selectedDayId={selectedDay.id}
+                  userId={currentUserId}
                   onSelectDay={(dayId) => updateState({ selectedDay: dayId })}
                   onDropMission={moveMissionToDay}
                 />
@@ -1599,6 +1574,7 @@ function WeekPlannerCalendar({
   selectedVersion,
   selectedWeek,
   selectedDayId,
+  userId,
   onSelectDay,
   onDropMission,
 }) {
@@ -1630,7 +1606,7 @@ function WeekPlannerCalendar({
             const completedCount = dayMissionIds.filter((missionId) =>
               completed[getMissionKey(selectedVersion, selectedWeek, day.id, missionId)],
             ).length
-            const dayDate = formatDate(getDayDate(selectedVersion, selectedWeek, day.id))
+            const dayDate = formatDate(getDayDate(selectedVersion, selectedWeek, day.id, userId))
 
             return (
               <div
@@ -1977,7 +1953,7 @@ function ProgressDashboard({
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-sm font-black text-slate-500">
-                      {c.month} {item.month} · {versions[item.version].label} · {getMonthDateRange(item)}
+                      {c.month} {item.month} · {versions[item.version].label} · {getMonthDateRange(item, progressUserId)}
                     </p>
                     <h3 className="mt-1 text-lg font-black text-slate-950">{tr(item.title, lang)}</h3>
                   </div>
@@ -2067,7 +2043,7 @@ function CurriculumToc({ curriculum, selectedVersion, selectedWeek, lang, isOpen
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <p className="text-sm font-black text-slate-500">
-                            {c.month} {item.month} · W{item.startWeek}-{item.startWeek + 3} · {getMonthDateRange(item)}
+                            {c.month} {item.month} · W{item.startWeek}-{item.startWeek + 3} · {getMonthDateRange(item, currentUserId)}
                           </p>
                           <h3 className="mt-1 text-lg font-black text-slate-950">{tr(item.title, lang)}</h3>
                         </div>
@@ -2157,8 +2133,10 @@ function AllUsersOverview({ allUsersData, lang }) {
       <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {allUsersData.map(({ user, state: userState }) => {
           const completed = userState.completed ?? {}
-          const userTotalMissions = getTotalMissionCount(user.id)
-          const userMaxStats = getMaxStatTotals(user.id)
+          const userTotalMissions = Object.keys(versions).reduce((sum, vk) =>
+            sum + versions[vk].weeks.reduce((s, _, i) =>
+              s + days.reduce((d, day) => d + getMissionIdsForDay(vk, i + 1, day).length, 0), 0), 0)
+          const userMaxStats = getMaxStatTotals()
           const xp = Object.entries(completed).reduce((sum, [key, done]) => {
             if (!done) return sum
             const missionId = key.split('|').at(-1)
