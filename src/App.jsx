@@ -1168,7 +1168,7 @@ export default function App() {
   return (
     <main className="life-dashboard min-h-screen bg-[#f7f8fb] text-slate-900">
       <section className="mx-auto flex w-full max-w-[96rem] flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8 2xl:max-w-[104rem]">
-        <header className="grid gap-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm lg:grid-cols-[1.15fr_0.75fr_0.95fr] lg:items-center">
+        <header className="grid gap-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm md:grid-cols-[1.15fr_0.75fr_0.95fr] md:items-center">
           <div>
             <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-sm font-semibold text-emerald-700">
               <Sparkles size={16} />
@@ -1310,7 +1310,7 @@ export default function App() {
               </div>
             </div>
 
-            <div className="grid gap-4 xl:grid-cols-[1fr_320px]">
+            <div className="grid gap-4 lg:grid-cols-[1fr_280px] xl:grid-cols-[1fr_320px]">
               <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
@@ -1352,7 +1352,7 @@ export default function App() {
                     </p>
                   </div>
                 ) : (
-                  <div className="mt-5 grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
+                  <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                     {dayMissions.map((mission, index) => {
                       const completed = Boolean(
                         state.completed[getMissionKey(state.selectedVersion, state.selectedWeek, selectedDay.id, mission.id)],
@@ -1516,7 +1516,7 @@ function WeekPlannerCalendar({
       </div>
 
       <div className="-mx-1 mt-4 overflow-x-auto px-1">
-        <div className="grid min-w-[62rem] grid-cols-7 gap-3 2xl:min-w-0">
+        <div className="grid min-w-[46rem] grid-cols-7 gap-1.5 md:gap-2 lg:gap-3 xl:min-w-0">
           {days.map((day) => {
             const dayMissionIds = schedule[day.id] ?? []
             const selected = selectedDayId === day.id
@@ -1538,7 +1538,7 @@ function WeekPlannerCalendar({
                   if (!day.rest) event.preventDefault()
                 }}
                 onDrop={(event) => handleDrop(event, day.id)}
-                className={`flex min-h-44 flex-col rounded-lg border p-2.5 text-left transition ${
+                className={`flex min-h-32 flex-col rounded-lg border p-2 text-left transition md:min-h-40 lg:min-h-44 lg:p-2.5 ${
                   selected
                     ? day.rest
                       ? 'border-slate-900 bg-slate-900 text-white'
@@ -1844,7 +1844,7 @@ function ProgressDashboard({
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-3">
         {versionStats.map((stat) => (
           <div key={stat.versionKey} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
             <div className="flex items-start justify-between gap-3">
@@ -1963,7 +1963,7 @@ function CurriculumToc({ curriculum, selectedVersion, selectedWeek, lang, isOpen
         </button>
       </div>
 
-      {isOpen && <div className="mt-5 grid gap-4 lg:grid-cols-3">
+      {isOpen && <div className="mt-5 grid gap-4 md:grid-cols-3">
         {columns.map(({ versionKey, items }, columnIndex) => {
           const versionInfo = versions[versionKey]
           return (
