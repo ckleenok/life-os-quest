@@ -920,6 +920,7 @@ export default function App() {
   const [currentUserId, setCurrentUserId] = useState(loadCurrentUserId)
   const [state, setState] = useState(createDefaultState)
   const [isLoading, setIsLoading] = useState(true)
+  const [allUsersData, setAllUsersData] = useState(null)
   const saveTimerRef = useRef(null)
   const lang = state.lang ?? 'en'
   const c = copy[lang]
@@ -954,6 +955,17 @@ export default function App() {
   useEffect(() => {
     document.documentElement.lang = lang === 'ko' ? 'ko' : 'en'
   }, [lang])
+
+  useEffect(() => {
+    if (state.activeTab !== 'progress') return
+    Promise.all(
+      users.map((user) =>
+        fetchUserState(user.id)
+          .then((s) => ({ user, state: s ? migrateState({ ...createDefaultState(), ...s }) : createDefaultState() }))
+          .catch(() => ({ user, state: createDefaultState() }))
+      )
+    ).then(setAllUsersData)
+  }, [state.activeTab])
 
   const switchUser = (userId) => {
     saveCurrentUserId(userId)
@@ -1462,6 +1474,8 @@ export default function App() {
             versionStats={allVersionStats}
             selectedVersion={state.selectedVersion}
             selectedWeek={state.selectedWeek}
+            allUsersData={allUsersData}
+            maxStatTotals={maxStatTotals}
             onSelect={(versionKey, week) =>
               updateState({
                 activeTab: 'quest',
@@ -1831,11 +1845,14 @@ function ProgressDashboard({
   versionStats,
   selectedVersion,
   selectedWeek,
+  allUsersData,
+  maxStatTotals,
   onSelect,
 }) {
   const c = copy[lang]
   return (
     <section className="space-y-4">
+      {allUsersData && <AllUsersOverview allUsersData={allUsersData} lang={lang} maxStatTotals={maxStatTotals} />}
       <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
@@ -2088,5 +2105,79 @@ function ActivitySummary({ days, selectedVersion, selectedWeek, selectedDayId, l
         })}
       </div>
     </aside>
+  )
+}
+
+function AllUsersOverview({ allUsersData, lang, maxStatTotals }) {
+  const totalMissionCount = Object.keys(versions).reduce((sum, vk) =>
+    sum + versions[vk].weeks.reduce((s, _, i) =>
+      s + days.reduce((d, day) => d + getMissionIdsForDay(vk, i + 1, day).length, 0), 0), 0)
+
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+      <p className="text-sm font-black text-emerald-600">All Members</p>
+      <h2 className="mt-1 text-2xl font-black text-slate-950">전체 멤버 현황</h2>
+
+      <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {allUsersData.map(({ user, state: userState }) => {
+          const completed = userState.completed ?? {}
+          const xp = Object.entries(completed).reduce((sum, [key, done]) => {
+            if (!done) return sum
+            const missionId = key.split('|').at(-1)
+            return sum + (missionMap[missionId]?.xp ?? 0)
+          }, 0)
+          const doneMissions = Object.entries(completed).filter(([key, done]) => done && missionMap[key.split('|').at(-1)]).length
+          const percent = totalMissionCount ? Math.round((doneMissions / totalMissionCount) * 100) : 0
+          const levelIndex = levels.reduce((a, l, i) => (xp >= l.min ? i : a), 0)
+          const level = levels[levelIndex]
+          const statTotals = getStatTotals(completed)
+
+          return (
+            <div key={user.id} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="grid h-9 w-9 place-items-center rounded-full bg-slate-900 text-sm font-black text-white">
+                    {user.name[0]}
+                  </div>
+                  <div>
+                    <p className="text-base font-black text-slate-950">{user.name}</p>
+                    <p className="text-xs font-bold text-slate-500">{tr(level.name, lang)}</p>
+                  </div>
+                </div>
+                <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-sm font-black text-emerald-700">{xp} XP</span>
+              </div>
+
+              <div className="mt-4">
+                <div className="flex justify-between text-xs font-bold text-slate-500 mb-1">
+                  <span>전체 진행률</span>
+                  <span>{percent}%</span>
+                </div>
+                <div className="h-2.5 overflow-hidden rounded-full bg-slate-200">
+                  <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${percent}%` }} />
+                </div>
+                <p className="mt-1 text-xs font-bold text-slate-400">{doneMissions}/{totalMissionCount} 미션</p>
+              </div>
+
+              <div className="mt-4 grid gap-1.5">
+                {characterStats.map((stat) => {
+                  const pts = statTotals[stat.id] ?? 0
+                  const maxPts = maxStatTotals[stat.id] || 1
+                  const pct = Math.min(100, Math.round((pts / maxPts) * 100))
+                  return (
+                    <div key={stat.id} className="flex items-center gap-2">
+                      <span className="w-12 shrink-0 text-[11px] font-black text-slate-500">{tr(stat.label, lang)}</span>
+                      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-200">
+                        <div className={`h-full rounded-full bg-gradient-to-r ${stat.color}`} style={{ width: `${pct}%` }} />
+                      </div>
+                      <span className="w-6 shrink-0 text-right text-[11px] font-black text-slate-400">{pts}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
   )
 }
