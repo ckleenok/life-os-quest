@@ -616,17 +616,20 @@ const levels = [
   { name: { en: 'Lv.6 Life-Ready Master', ko: 'Lv.6 생활 설계 마스터' }, min: 1800 },
 ]
 
-const createDefaultState = () => ({
-  selectedVersion: 'v1',
-  selectedWeek: 1,
-  selectedDay: 'mon',
-  activeTab: 'quest',
-  lang: 'en',
-  showToc: true,
-  completed: {},
-  memos: {},
-  schedules: {},
-})
+const createDefaultState = () => {
+  const { version, week, dayId } = getTodayVersionWeekDay()
+  return {
+    selectedVersion: version,
+    selectedWeek: week,
+    selectedDay: dayId,
+    activeTab: 'quest',
+    lang: 'en',
+    showToc: true,
+    completed: {},
+    memos: {},
+    schedules: {},
+  }
+}
 
 function getUserStorageKey(userId) {
   return `${USER_STORAGE_PREFIX}:${userId}`
@@ -800,6 +803,41 @@ function getAbsoluteWeek(version, week) {
   return versionWeekOffsets[version] + week
 }
 
+function getTodayVersionWeekDay() {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const diffDays = Math.floor((today - PROGRAM_START_DATE) / (1000 * 60 * 60 * 24))
+  if (diffDays < 0) return { version: 'v1', week: 1, dayId: 'mon' }
+  const totalWeeks = Math.floor(diffDays / 7)
+  const dayIndex = Math.min(diffDays % 7, days.length - 1)
+  const dayId = days[dayIndex]?.id ?? 'mon'
+  const versionKeys = Object.keys(versions)
+  for (const vk of versionKeys) {
+    const offset = versionWeekOffsets[vk]
+    if (totalWeeks >= offset && totalWeeks < offset + 8) {
+      return { version: vk, week: totalWeeks - offset + 1, dayId }
+    }
+  }
+  // After program end, stay on last week
+  return { version: 'v3', week: 8, dayId: 'mon' }
+}
+
+function getNextVersionWeek(version, week) {
+  if (week < 8) return { version, week: week + 1 }
+  const vks = Object.keys(versions)
+  const idx = vks.indexOf(version)
+  if (idx < vks.length - 1) return { version: vks[idx + 1], week: 1 }
+  return null
+}
+
+function getPrevVersionWeek(version, week) {
+  if (week > 1) return { version, week: week - 1 }
+  const vks = Object.keys(versions)
+  const idx = vks.indexOf(version)
+  if (idx > 0) return { version: vks[idx - 1], week: 8 }
+  return null
+}
+
 function getWeekStartDate(version, week) {
   return addDays(PROGRAM_START_DATE, (getAbsoluteWeek(version, week) - 1) * 7)
 }
@@ -931,16 +969,18 @@ export default function App() {
     setIsLoading(true)
     fetchUserState(currentUserId)
       .then((remoteState) => {
+        const today = getTodayVersionWeekDay()
         if (remoteState) {
-          setState(migrateState({ ...createDefaultState(), ...remoteState }))
+          setState(migrateState({ ...createDefaultState(), ...remoteState, ...today }))
         } else {
           const localState = loadState(currentUserId)
-          setState(localState)
-          upsertUserState(currentUserId, localState).catch(console.error)
+          const merged = { ...localState, ...today }
+          setState(merged)
+          upsertUserState(currentUserId, merged).catch(console.error)
         }
       })
       .catch(() => {
-        setState(loadState(currentUserId))
+        setState({ ...loadState(currentUserId), ...getTodayVersionWeekDay() })
       })
       .finally(() => setIsLoading(false))
   }, [currentUserId])
@@ -1353,10 +1393,38 @@ export default function App() {
             <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <p className="text-sm font-black text-emerald-600">
-                    {version.label} · Week {state.selectedWeek} ·{' '}
-                    {formatDateRange(getWeekStartDate(state.selectedVersion, state.selectedWeek), addDays(getWeekStartDate(state.selectedVersion, state.selectedWeek), 6))}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const prev = getPrevVersionWeek(state.selectedVersion, state.selectedWeek)
+                        if (prev) updateState({ selectedVersion: prev.version, selectedWeek: prev.week, selectedDay: 'mon' })
+                      }}
+                      disabled={!getPrevVersionWeek(state.selectedVersion, state.selectedWeek)}
+                      className="grid h-7 w-7 place-items-center rounded-md border border-slate-200 text-slate-500 hover:border-slate-400 disabled:opacity-30"
+                    >‹</button>
+                    <p className="text-sm font-black text-emerald-600">
+                      {version.label} · Week {state.selectedWeek} ·{' '}
+                      {formatDateRange(getWeekStartDate(state.selectedVersion, state.selectedWeek), addDays(getWeekStartDate(state.selectedVersion, state.selectedWeek), 6))}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = getNextVersionWeek(state.selectedVersion, state.selectedWeek)
+                        if (next) updateState({ selectedVersion: next.version, selectedWeek: next.week, selectedDay: 'mon' })
+                      }}
+                      disabled={!getNextVersionWeek(state.selectedVersion, state.selectedWeek)}
+                      className="grid h-7 w-7 place-items-center rounded-md border border-slate-200 text-slate-500 hover:border-slate-400 disabled:opacity-30"
+                    >›</button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const { version: v, week: w, dayId } = getTodayVersionWeekDay()
+                        updateState({ selectedVersion: v, selectedWeek: w, selectedDay: dayId })
+                      }}
+                      className="ml-1 inline-flex h-7 items-center rounded-md border border-emerald-300 bg-emerald-50 px-2 text-xs font-black text-emerald-700 hover:bg-emerald-100"
+                    >오늘</button>
+                  </div>
                   <h2 className="mt-1 text-2xl font-black text-slate-950">{tr(version.weeks[state.selectedWeek - 1], lang)}</h2>
                   <p className="mt-2 text-sm leading-6 text-slate-600">{tr(version.theme, lang)}</p>
                 </div>
