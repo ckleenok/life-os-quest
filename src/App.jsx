@@ -954,6 +954,12 @@ function getOverallPercent(statTotals, maxStatTotals) {
   return maxTotal ? Math.round((total / maxTotal) * 100) : 0
 }
 
+function getFixedChartAxisMax() {
+  const maxStatTotals = getMaxStatTotals()
+  const rawMax = Math.max(...Object.values(maxStatTotals), 1)
+  return Math.ceil(rawMax / 10) * 10
+}
+
 export default function App() {
   const [currentUserId, setCurrentUserId] = useState(loadCurrentUserId)
   const [state, setState] = useState(createDefaultState)
@@ -2273,7 +2279,7 @@ function getWeekStatPoints(completed, vk, week) {
   return getStatTotals(weekCompleted)
 }
 
-function StatLineChart({ title, subtitle, xLabels, dataPoints, lang }) {
+function StatBarChart({ title, subtitle, xLabels, dataPoints, lang, fixedMax }) {
   const W = 600
   const H = 180
   const padL = 36
@@ -2284,12 +2290,15 @@ function StatLineChart({ title, subtitle, xLabels, dataPoints, lang }) {
   const chartH = H - padT - padB
   const n = xLabels.length
 
-  const maxVal = Math.max(
-    ...characterStats.flatMap((s) => dataPoints.map((d) => d[s.id] ?? 0)),
-    1,
-  )
+  const maxVal = Math.max(fixedMax ?? 0, 1)
 
-  const toX = (i) => padL + (i / (n - 1)) * chartW
+  const statGroupWidth = chartW / characterStats.length
+  const statGroupInnerWidth = Math.max(statGroupWidth - 10, 16)
+  const barGap = n > 10 ? 0.75 : 1.5
+  const barWidth = Math.max((statGroupInnerWidth - barGap * Math.max(n - 1, 0)) / Math.max(n, 1), 1.5)
+  const statGroupStartX = (statIndex) => padL + statIndex * statGroupWidth + (statGroupWidth - statGroupInnerWidth) / 2
+  const barX = (statIndex, periodIndex) => statGroupStartX(statIndex) + periodIndex * (barWidth + barGap)
+  const statLabelX = (statIndex) => statGroupStartX(statIndex) + statGroupInnerWidth / 2
   const toY = (v) => padT + chartH - (v / maxVal) * chartH
 
   const gridLines = [0, 0.25, 0.5, 0.75, 1].map((f) => Math.round(maxVal * f))
@@ -2321,38 +2330,61 @@ function StatLineChart({ title, subtitle, xLabels, dataPoints, lang }) {
           )
         })}
 
-        {/* X labels */}
-        {xLabels.map((label, i) => (
-          <text key={i} x={toX(i)} y={H - 6} textAnchor="middle" fill="#94a3b8" fontSize="9" fontWeight="700">
-            {label}
+        {/* Stat group separators */}
+        {characterStats.slice(1).map((stat, index) => (
+          <line
+            key={stat.id}
+            x1={padL + statGroupWidth * index}
+            y1={padT}
+            x2={padL + statGroupWidth * index}
+            y2={padT + chartH}
+            stroke="#1e293b"
+            strokeWidth="1"
+            opacity="0.65"
+          />
+        ))}
+
+        {/* Stat labels */}
+        {characterStats.map((stat, statIndex) => (
+          <text
+            key={stat.id}
+            x={statLabelX(statIndex)}
+            y={H - 6}
+            textAnchor="middle"
+            fill="#94a3b8"
+            fontSize="9"
+            fontWeight="700"
+          >
+            {tr(stat.label, lang)}
           </text>
         ))}
 
-        {/* Stat lines */}
-        {characterStats.map((s) => {
-          const pts = dataPoints.map((d, i) => `${toX(i)},${toY(d[s.id] ?? 0)}`).join(' ')
+        {/* Bars grouped by stat */}
+        {characterStats.map((stat, statIndex) => {
+          const fill = statLineColors[stat.id]
+
           return (
-            <g key={s.id}>
-              <polyline
-                points={pts}
-                fill="none"
-                stroke={statLineColors[s.id]}
-                strokeWidth="2"
-                strokeLinejoin="round"
-                strokeLinecap="round"
-                opacity="0.85"
-              />
-              {dataPoints.map((d, i) => (
-                <circle
-                  key={i}
-                  cx={toX(i)}
-                  cy={toY(d[s.id] ?? 0)}
-                  r="3"
-                  fill={statLineColors[s.id]}
-                  stroke="#fff"
-                  strokeWidth="1"
-                />
-              ))}
+            <g key={stat.id}>
+              {dataPoints.map((point, periodIndex) => {
+                const value = point[stat.id] ?? 0
+                const y = toY(value)
+                const height = chartH - (y - padT)
+
+                return (
+                  <rect
+                    key={`${stat.id}-${periodIndex}`}
+                    x={barX(statIndex, periodIndex)}
+                    y={y}
+                    width={barWidth}
+                    height={Math.max(height, 0)}
+                    rx="1.5"
+                    fill={fill}
+                    opacity="0.92"
+                  >
+                    <title>{`${tr(stat.label, lang)} - ${xLabels[periodIndex] ?? ''}: ${value}`}</title>
+                  </rect>
+                )
+              })}
             </g>
           )
         })}
@@ -2362,18 +2394,13 @@ function StatLineChart({ title, subtitle, xLabels, dataPoints, lang }) {
 }
 
 function TrendCharts({ completed, lang }) {
-  // Weekly: cumulative stat points across all 24 weeks
+  const fixedAxisMax = getFixedChartAxisMax()
+
+  // Weekly: actual stat points earned in each week
   const allWeekDefs = Object.keys(versions).flatMap((vk) =>
     versions[vk].weeks.map((_, i) => ({ vk, week: i + 1, label: `${versions[vk].label} W${i + 1}` }))
   )
-  const weeklyPoints = (() => {
-    const acc = Object.fromEntries(characterStats.map((s) => [s.id, 0]))
-    return allWeekDefs.map(({ vk, week }) => {
-      const pts = getWeekStatPoints(completed, vk, week)
-      characterStats.forEach((s) => { acc[s.id] = (acc[s.id] ?? 0) + (pts[s.id] ?? 0) })
-      return { ...acc }
-    })
-  })()
+  const weeklyPoints = allWeekDefs.map(({ vk, week }) => getWeekStatPoints(completed, vk, week))
   const weeklyLabels = allWeekDefs.map((d, i) => (i % 4 === 0 ? d.label.replace(' ', '\n') : ''))
   const weeklyShortLabels = allWeekDefs.map((d, i) => {
     if (i === 0) return 'V1 W1'
@@ -2383,39 +2410,43 @@ function TrendCharts({ completed, lang }) {
     return ''
   })
 
-  // Monthly: cumulative stat points per month
+  // Monthly: actual stat points earned in each month
   const monthDefs = [
     { version: 'v1', startWeek: 1 }, { version: 'v1', startWeek: 5 },
     { version: 'v2', startWeek: 1 }, { version: 'v2', startWeek: 5 },
     { version: 'v3', startWeek: 1 }, { version: 'v3', startWeek: 5 },
   ]
-  const monthlyPoints = (() => {
-    const acc = Object.fromEntries(characterStats.map((s) => [s.id, 0]))
-    return monthDefs.map(({ version, startWeek }) => {
-      for (let w = startWeek; w < startWeek + 4; w++) {
-        const pts = getWeekStatPoints(completed, version, w)
-        characterStats.forEach((s) => { acc[s.id] = (acc[s.id] ?? 0) + (pts[s.id] ?? 0) })
-      }
-      return { ...acc }
-    })
-  })()
+  const monthlyPoints = monthDefs.map(({ version, startWeek }) => {
+    const monthTotals = Object.fromEntries(characterStats.map((s) => [s.id, 0]))
+
+    for (let w = startWeek; w < startWeek + 4; w++) {
+      const pts = getWeekStatPoints(completed, version, w)
+      characterStats.forEach((s) => {
+        monthTotals[s.id] = (monthTotals[s.id] ?? 0) + (pts[s.id] ?? 0)
+      })
+    }
+
+    return monthTotals
+  })
   const monthlyLabels = ['M1', 'M2', 'M3', 'M4', 'M5', 'M6']
 
   return (
     <div className="grid gap-4 xl:grid-cols-2">
-      <StatLineChart
-        title="주간 성장 곡선"
+      <StatBarChart
+        title={lang === 'ko' ? '주간 스탯 바 그래프' : 'Weekly Stat Bars'}
         subtitle="Weekly Growth"
         xLabels={weeklyShortLabels}
         dataPoints={weeklyPoints}
         lang={lang}
+        fixedMax={fixedAxisMax}
       />
-      <StatLineChart
-        title="월별 성장 곡선"
+      <StatBarChart
+        title={lang === 'ko' ? '월별 스탯 바 그래프' : 'Monthly Stat Bars'}
         subtitle="Monthly Growth"
         xLabels={monthlyLabels}
         dataPoints={monthlyPoints}
         lang={lang}
+        fixedMax={fixedAxisMax}
       />
     </div>
   )
