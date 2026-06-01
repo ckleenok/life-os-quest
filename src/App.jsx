@@ -31,6 +31,13 @@ const users = [
   { id: 'mark',  name: 'Mark' },
   { id: 'sally', name: 'Sally' },
 ]
+
+const userBadgeStyles = {
+  CK: 'border-cyan-400 bg-cyan-500/15 text-cyan-200',
+  Ella: 'border-fuchsia-400 bg-fuchsia-500/15 text-fuchsia-200',
+  Mark: 'border-amber-400 bg-amber-500/15 text-amber-200',
+  Sally: 'border-emerald-400 bg-emerald-500/15 text-emerald-200',
+}
 const versionWeekOffsets = {
   v1: 0,
   v2: 8,
@@ -960,6 +967,44 @@ function getFixedChartAxisMax() {
   return Math.ceil(rawMax / 10) * 10
 }
 
+function getDayScheduleSummary(allUsersData, version, week, dayId) {
+  const missionUsers = {}
+
+  allUsersData?.forEach(({ user, state }) => {
+    const userSchedule = getWeekSchedule(state?.schedules, version, week)
+    const missionIds = userSchedule?.[dayId] ?? []
+
+    missionIds.forEach((missionId) => {
+      if (!missionMap[missionId]) return
+      if (!missionUsers[missionId]) missionUsers[missionId] = []
+      missionUsers[missionId].push(user.name)
+    })
+  })
+
+  return Object.entries(missionUsers)
+    .map(([missionId, names]) => ({ missionId, names }))
+    .sort((a, b) => a.missionId.localeCompare(b.missionId))
+}
+
+function getNextDayRef(version, week, dayId) {
+  const dayIndex = days.findIndex((day) => day.id === dayId)
+  if (dayIndex >= 0 && dayIndex < days.length - 1) {
+    return { version, week, dayId: days[dayIndex + 1].id }
+  }
+
+  const nextWeek = getNextVersionWeek(version, week)
+  if (!nextWeek) return { version, week, dayId }
+  return { version: nextWeek.version, week: nextWeek.week, dayId: 'mon' }
+}
+
+function formatLongDate(date, lang) {
+  return new Intl.DateTimeFormat(lang === 'ko' ? 'en-GB' : 'en-GB', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(date)
+}
+
 export default function App() {
   const [currentUserId, setCurrentUserId] = useState(loadCurrentUserId)
   const [state, setState] = useState(createDefaultState)
@@ -1004,7 +1049,6 @@ export default function App() {
   }, [lang])
 
   useEffect(() => {
-    if (state.activeTab !== 'progress') return
     Promise.all(
       users.map((user) =>
         fetchUserState(user.id)
@@ -1012,7 +1056,7 @@ export default function App() {
           .catch(() => ({ user, state: createDefaultState() }))
       )
     ).then(setAllUsersData)
-  }, [state.activeTab])
+  }, [currentUserId, state.schedules])
 
   const switchUser = (userId) => {
     saveCurrentUserId(userId)
@@ -1396,60 +1440,70 @@ export default function App() {
 
         <section className="grid gap-4">
           <section className="space-y-4">
-            <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const prev = getPrevVersionWeek(state.selectedVersion, state.selectedWeek)
-                        if (prev) updateState({ selectedVersion: prev.version, selectedWeek: prev.week, selectedDay: 'mon' })
-                      }}
-                      disabled={!getPrevVersionWeek(state.selectedVersion, state.selectedWeek)}
-                      className="grid h-7 w-7 place-items-center rounded-md border border-slate-200 text-slate-500 hover:border-slate-400 disabled:opacity-30"
-                    >‹</button>
-                    <p className="text-sm font-black text-emerald-600">
-                      {version.label} · Week {state.selectedWeek} ·{' '}
-                      {formatDateRange(getWeekStartDate(state.selectedVersion, state.selectedWeek), addDays(getWeekStartDate(state.selectedVersion, state.selectedWeek), 6))}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const next = getNextVersionWeek(state.selectedVersion, state.selectedWeek)
-                        if (next) updateState({ selectedVersion: next.version, selectedWeek: next.week, selectedDay: 'mon' })
-                      }}
-                      disabled={!getNextVersionWeek(state.selectedVersion, state.selectedWeek)}
-                      className="grid h-7 w-7 place-items-center rounded-md border border-slate-200 text-slate-500 hover:border-slate-400 disabled:opacity-30"
-                    >›</button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const { version: v, week: w, dayId } = getTodayVersionWeekDay()
-                        updateState({ selectedVersion: v, selectedWeek: w, selectedDay: dayId })
-                      }}
-                      className="ml-1 inline-flex h-7 items-center rounded-md border border-emerald-300 bg-emerald-50 px-2 text-xs font-black text-emerald-700 hover:bg-emerald-100"
-                    >오늘</button>
+            <div className="grid gap-4 xl:grid-cols-[minmax(0,0.56fr)_minmax(0,1fr)]">
+              <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const prev = getPrevVersionWeek(state.selectedVersion, state.selectedWeek)
+                          if (prev) updateState({ selectedVersion: prev.version, selectedWeek: prev.week, selectedDay: 'mon' })
+                        }}
+                        disabled={!getPrevVersionWeek(state.selectedVersion, state.selectedWeek)}
+                        className="grid h-7 w-7 place-items-center rounded-md border border-slate-200 text-slate-500 hover:border-slate-400 disabled:opacity-30"
+                      >‹</button>
+                      <p className="text-sm font-black text-emerald-600">
+                        {version.label} · Week {state.selectedWeek} ·{' '}
+                        {formatDateRange(getWeekStartDate(state.selectedVersion, state.selectedWeek), addDays(getWeekStartDate(state.selectedVersion, state.selectedWeek), 6))}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const next = getNextVersionWeek(state.selectedVersion, state.selectedWeek)
+                          if (next) updateState({ selectedVersion: next.version, selectedWeek: next.week, selectedDay: 'mon' })
+                        }}
+                        disabled={!getNextVersionWeek(state.selectedVersion, state.selectedWeek)}
+                        className="grid h-7 w-7 place-items-center rounded-md border border-slate-200 text-slate-500 hover:border-slate-400 disabled:opacity-30"
+                      >›</button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const { version: v, week: w, dayId } = getTodayVersionWeekDay()
+                          updateState({ selectedVersion: v, selectedWeek: w, selectedDay: dayId })
+                        }}
+                        className="ml-1 inline-flex h-7 items-center rounded-md border border-emerald-300 bg-emerald-50 px-2 text-xs font-black text-emerald-700 hover:bg-emerald-100"
+                      >오늘</button>
+                    </div>
+                    <h2 className="mt-1 text-2xl font-black text-slate-950">{tr(version.weeks[state.selectedWeek - 1], lang)}</h2>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">{tr(version.theme, lang)}</p>
                   </div>
-                  <h2 className="mt-1 text-2xl font-black text-slate-950">{tr(version.weeks[state.selectedWeek - 1], lang)}</h2>
-                  <p className="mt-2 text-sm leading-6 text-slate-600">{tr(version.theme, lang)}</p>
+                  <button
+                    type="button"
+                    onClick={resetCurrentWeek}
+                    className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 text-sm font-bold text-slate-600 hover:border-slate-400"
+                    title={c.resetTitle}
+                  >
+                    <RotateCcw size={16} />
+                    {c.reset}
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={resetCurrentWeek}
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 text-sm font-bold text-slate-600 hover:border-slate-400"
-                  title={c.resetTitle}
-                >
-                  <RotateCcw size={16} />
-                  {c.reset}
-                </button>
+
+                <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                  <Stat label={c.weekComplete} value={`${weekCompleted}/${weeklyMissionCount}`} />
+                  <Stat label={c.selectedDay} value={selectedDay.rest ? c.rest : `${dayCompleted}/${dayMissions.length}`} />
+                  <Stat label={c.totalXp} value={`${totalXp}`} />
+                </div>
               </div>
 
-              <div className="mt-5 grid gap-3 sm:grid-cols-3">
-                <Stat label={c.weekComplete} value={`${weekCompleted}/${weeklyMissionCount}`} />
-                <Stat label={c.selectedDay} value={selectedDay.rest ? c.rest : `${dayCompleted}/${dayMissions.length}`} />
-                <Stat label={c.totalXp} value={`${totalXp}`} />
-              </div>
+              <FamilyScheduleVisibility
+                allUsersData={allUsersData}
+                selectedVersion={state.selectedVersion}
+                selectedWeek={state.selectedWeek}
+                selectedDayId={selectedDay.id}
+                lang={lang}
+              />
             </div>
 
             <div className="grid gap-4 lg:grid-cols-[1fr_280px] xl:grid-cols-[1fr_320px]">
@@ -1614,6 +1668,74 @@ function Stat({ label, value }) {
     <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
       <p className="text-sm font-semibold text-slate-500">{label}</p>
       <p className="mt-1 text-2xl font-black text-slate-950">{value}</p>
+    </div>
+  )
+}
+
+function FamilyScheduleVisibility({ allUsersData, selectedVersion, selectedWeek, selectedDayId, lang }) {
+  const actualTodayRef = getTodayVersionWeekDay()
+  const sections = [
+    {
+      key: 'today',
+      ref: actualTodayRef,
+    },
+    {
+      key: 'tomorrow',
+      ref: getNextDayRef(actualTodayRef.version, actualTodayRef.week, actualTodayRef.dayId),
+    },
+  ].map((section) => {
+    const day = days.find((item) => item.id === section.ref.dayId) ?? days[0]
+    const activities = getDayScheduleSummary(allUsersData, section.ref.version, section.ref.week, section.ref.dayId)
+    return { ...section, day, activities }
+  })
+
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+      <p className="text-sm font-black text-emerald-600">{lang === 'ko' ? '가족 일정 가시성' : 'Family Visibility'}</p>
+      <h3 className="mt-1 text-xl font-black text-slate-950">
+        {lang === 'ko' ? '오늘과 내일 활동 보드' : 'Today and Tomorrow Board'}
+      </h3>
+
+      <div className="mt-4 grid gap-4 xl:grid-cols-2">
+        {sections.map((section) => (
+          <div key={section.key} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+            <div className="border-b border-sky-200 pb-3 text-center">
+              <h4 className="mt-1 text-2xl font-black text-slate-950">
+                {formatLongDate(getDayDate(section.ref.version, section.ref.week, section.ref.dayId), lang)}
+              </h4>
+            </div>
+
+            <div className="mt-5 grid gap-3">
+              {section.activities.length > 0 ? (
+                section.activities.map(({ missionId, names }) => (
+                  <div
+                    key={`${section.key}-${missionId}`}
+                    className="grid min-h-[74px] items-center gap-3 rounded-md border border-slate-200 bg-white px-3 py-3 md:grid-cols-[120px_minmax(0,1fr)]"
+                  >
+                    <p className="text-base font-black text-slate-900">{tr(missionMap[missionId]?.ko, lang)}</p>
+                    <div className="flex min-h-[42px] flex-wrap content-start gap-2 text-slate-800">
+                      {names.map((name) => (
+                        <span
+                          key={`${section.key}-${missionId}-${name}`}
+                          className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-black leading-none ${
+                            userBadgeStyles[name] ?? 'border-slate-300 bg-slate-100 text-slate-700'
+                          }`}
+                        >
+                          {name}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="rounded-md border border-dashed border-slate-200 bg-white px-3 py-6 text-center text-sm font-bold text-slate-400">
+                  {lang === 'ko' ? '잡힌 활동 없음' : 'No activities planned'}
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
