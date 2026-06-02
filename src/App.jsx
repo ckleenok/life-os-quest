@@ -967,6 +967,60 @@ function getFixedChartAxisMax() {
   return Math.ceil(rawMax / 10) * 10
 }
 
+function getPlannedWeekStatPoints(version, week) {
+  const totals = Object.fromEntries(characterStats.map((stat) => [stat.id, 0]))
+
+  days.forEach((day) => {
+    getMissionIdsForDay(version, week, day).forEach((missionId) => {
+      const rewards = missionMap[missionId]?.statRewards ?? {}
+      Object.entries(rewards).forEach(([statId, points]) => {
+        totals[statId] = (totals[statId] ?? 0) + points
+      })
+    })
+  })
+
+  return totals
+}
+
+function getWeeklyChartAxisMax() {
+  const rawMax = Math.max(
+    ...Object.keys(versions).flatMap((versionKey) =>
+      versions[versionKey].weeks.flatMap((_, index) =>
+        Object.values(getPlannedWeekStatPoints(versionKey, index + 1))
+      )
+    ),
+    1,
+  )
+
+  return Math.ceil(rawMax / 10) * 10
+}
+
+function getMonthlyChartAxisMax() {
+  const monthDefs = [
+    { version: 'v1', startWeek: 1 }, { version: 'v1', startWeek: 5 },
+    { version: 'v2', startWeek: 1 }, { version: 'v2', startWeek: 5 },
+    { version: 'v3', startWeek: 1 }, { version: 'v3', startWeek: 5 },
+  ]
+
+  const rawMax = Math.max(
+    ...monthDefs.flatMap(({ version, startWeek }) => {
+      const totals = Object.fromEntries(characterStats.map((stat) => [stat.id, 0]))
+
+      for (let w = startWeek; w < startWeek + 4; w++) {
+        const weekTotals = getPlannedWeekStatPoints(version, w)
+        Object.entries(weekTotals).forEach(([statId, points]) => {
+          totals[statId] = (totals[statId] ?? 0) + points
+        })
+      }
+
+      return Object.values(totals)
+    }),
+    1,
+  )
+
+  return Math.ceil(rawMax / 10) * 10
+}
+
 function getDayScheduleSummary(allUsersData, version, week, dayId) {
   const missionUsers = {}
 
@@ -1696,28 +1750,28 @@ function FamilyScheduleVisibility({ allUsersData, selectedVersion, selectedWeek,
         {lang === 'ko' ? '오늘과 내일 활동 보드' : 'Today and Tomorrow Board'}
       </h3>
 
-      <div className="mt-4 grid gap-4 xl:grid-cols-2">
+      <div className="mt-4 grid gap-3 xl:grid-cols-2">
         {sections.map((section) => (
-          <div key={section.key} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-            <div className="border-b border-sky-200 pb-3 text-center">
-              <h4 className="mt-1 text-2xl font-black text-slate-950">
+          <div key={section.key} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <div className="border-b border-sky-200 pb-2 text-center">
+              <h4 className="mt-0.5 text-[1.7rem] font-black text-slate-950">
                 {formatLongDate(getDayDate(section.ref.version, section.ref.week, section.ref.dayId), lang)}
               </h4>
             </div>
 
-            <div className="mt-5 grid gap-3">
+            <div className="mt-4 grid gap-2.5">
               {section.activities.length > 0 ? (
                 section.activities.map(({ missionId, names }) => (
                   <div
                     key={`${section.key}-${missionId}`}
-                    className="grid min-h-[74px] items-center gap-3 rounded-md border border-slate-200 bg-white px-3 py-3 md:grid-cols-[120px_minmax(0,1fr)]"
+                    className="grid min-h-[52px] items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 md:grid-cols-[92px_minmax(0,1fr)]"
                   >
-                    <p className="text-base font-black text-slate-900">{tr(missionMap[missionId]?.ko, lang)}</p>
-                    <div className="flex min-h-[42px] flex-wrap content-start gap-2 text-slate-800">
+                    <p className="text-[15px] font-black text-slate-900">{tr(missionMap[missionId]?.ko, lang)}</p>
+                    <div className="flex min-h-[24px] flex-wrap content-center gap-1.5 text-slate-800">
                       {names.map((name) => (
                         <span
                           key={`${section.key}-${missionId}-${name}`}
-                          className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-black leading-none ${
+                          className={`inline-flex h-5 items-center rounded-full border px-2 text-[10px] font-black leading-none ${
                             userBadgeStyles[name] ?? 'border-slate-300 bg-slate-100 text-slate-700'
                           }`}
                         >
@@ -2516,7 +2570,8 @@ function StatBarChart({ title, subtitle, xLabels, dataPoints, lang, fixedMax }) 
 }
 
 function TrendCharts({ completed, lang }) {
-  const fixedAxisMax = getFixedChartAxisMax()
+  const weeklyAxisMax = getWeeklyChartAxisMax()
+  const monthlyAxisMax = getMonthlyChartAxisMax()
 
   // Weekly: actual stat points earned in each week
   const allWeekDefs = Object.keys(versions).flatMap((vk) =>
@@ -2560,7 +2615,7 @@ function TrendCharts({ completed, lang }) {
         xLabels={weeklyShortLabels}
         dataPoints={weeklyPoints}
         lang={lang}
-        fixedMax={fixedAxisMax}
+        fixedMax={weeklyAxisMax}
       />
       <StatBarChart
         title={lang === 'ko' ? '월별 스탯 바 그래프' : 'Monthly Stat Bars'}
@@ -2568,7 +2623,7 @@ function TrendCharts({ completed, lang }) {
         xLabels={monthlyLabels}
         dataPoints={monthlyPoints}
         lang={lang}
-        fixedMax={fixedAxisMax}
+        fixedMax={monthlyAxisMax}
       />
     </div>
   )
