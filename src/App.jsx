@@ -51,7 +51,9 @@ const copy = {
     highestLevel: 'Max level',
     quest: 'Quest',
     progress: 'Progress',
+    diary: '일기',
     roadmap: 'Roadmap',
+    diary: 'Diary',
     versionSelect: 'Chapter',
     weeklyRoadmap: 'Weekly Roadmap',
     weeks: '8 weeks',
@@ -100,6 +102,10 @@ const copy = {
     dropHere: 'Drop here',
     monthlyProgress: 'Monthly Progress',
     curriculumCheck: '6-Month Curriculum Check',
+    diaryBoard: 'Diary Board',
+    weeklyDiary: 'Weekly Diary',
+    monthlyDiary: 'Monthly Diary',
+    noDiaryEntries: 'No diary entry yet.',
     missions: 'missions',
     month: 'Month',
     week: 'Week',
@@ -630,6 +636,7 @@ const createDefaultState = () => {
     selectedWeek: week,
     selectedDay: dayId,
     activeTab: 'quest',
+    diaryView: 'week',
     lang: 'en',
     showToc: true,
     completed: {},
@@ -1059,6 +1066,39 @@ function formatLongDate(date, lang) {
   }).format(date)
 }
 
+function getMonthBlockStartWeek(week) {
+  return week <= 4 ? 1 : 5
+}
+
+function getDiaryEntry(memos, version, week, dayId) {
+  const key = dayId === 'sun' ? getMemoKey(version, week) : getDailyMemoKey(version, week, dayId)
+  return (memos?.[key] ?? '').trim()
+}
+
+function getWeekDiaryEntries(memos, version, week) {
+  return days.map((day) => ({
+    ...day,
+    date: getDayDate(version, week, day.id),
+    text: getDiaryEntry(memos, version, week, day.id),
+  }))
+}
+
+function getMonthDiaryEntries(memos, version, selectedWeek) {
+  const startWeek = getMonthBlockStartWeek(selectedWeek)
+  return Array.from({ length: 4 }, (_, weekOffset) => {
+    const week = startWeek + weekOffset
+    return {
+      week,
+      entries: getWeekDiaryEntries(memos, version, week),
+    }
+  })
+}
+
+function getDiaryPreview(text) {
+  if (!text) return ''
+  return text.replace(/\s+/g, ' ').trim()
+}
+
 export default function App() {
   const [currentUserId, setCurrentUserId] = useState(loadCurrentUserId)
   const [state, setState] = useState(createDefaultState)
@@ -1444,7 +1484,7 @@ export default function App() {
           </div>
         </header>
 
-        <nav className="grid grid-cols-3 gap-2 rounded-lg border border-slate-200 bg-white p-2 shadow-sm sm:flex sm:w-fit">
+        <nav className="grid grid-cols-4 gap-2 rounded-lg border border-slate-200 bg-white p-2 shadow-sm sm:flex sm:w-fit">
           <TabButton
             active={state.activeTab === 'quest'}
             icon={Compass}
@@ -1462,6 +1502,12 @@ export default function App() {
             icon={ListTree}
             label={c.roadmap}
             onClick={() => updateState({ showToc: !state.showToc, activeTab: 'quest' })}
+          />
+          <TabButton
+            active={state.activeTab === 'diary'}
+            icon={NotebookPen}
+            label={c.diary ?? copy.en.diary}
+            onClick={() => updateState({ activeTab: 'diary' })}
           />
         </nav>
 
@@ -1674,6 +1720,23 @@ export default function App() {
           </section>
         </section>
           </>
+        ) : state.activeTab === 'diary' ? (
+          <DiaryDashboard
+            memos={state.memos}
+            selectedVersion={state.selectedVersion}
+            selectedWeek={state.selectedWeek}
+            diaryView={state.diaryView ?? 'week'}
+            lang={lang}
+            onChangeView={(diaryView) => updateState({ diaryView })}
+            onSelectWeek={(versionKey, week) =>
+              updateState({
+                activeTab: 'quest',
+                selectedVersion: versionKey,
+                selectedWeek: week,
+                selectedDay: 'mon',
+              })
+            }
+          />
         ) : (
           <ProgressDashboard
             curriculum={curriculum}
@@ -2122,6 +2185,132 @@ function StatRadar({ lang, c, statTotals, maxStatTotals, overallPower }) {
         </text>
       </svg>
     </div>
+  )
+}
+
+function DiaryDashboard({ memos, selectedVersion, selectedWeek, diaryView, lang, onChangeView, onSelectWeek }) {
+  const c = copy[lang]
+  const weekEntries = getWeekDiaryEntries(memos, selectedVersion, selectedWeek)
+  const monthWeeks = getMonthDiaryEntries(memos, selectedVersion, selectedWeek)
+  const monthStartWeek = getMonthBlockStartWeek(selectedWeek)
+  const monthEndWeek = monthStartWeek + 3
+  const monthStartDate = getWeekStartDate(selectedVersion, monthStartWeek)
+  const monthEndDate = addDays(getWeekStartDate(selectedVersion, monthEndWeek), 6)
+  const selectedWeekStart = getWeekStartDate(selectedVersion, selectedWeek)
+  const selectedWeekEnd = addDays(selectedWeekStart, 6)
+  const dayHeaderClass = 'rounded-lg border border-slate-200 bg-slate-50 p-3'
+
+  return (
+    <section className="space-y-4">
+      <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-black text-emerald-600">{c.diaryBoard ?? copy.en.diaryBoard}</p>
+            <h2 className="mt-1 text-2xl font-black text-slate-950">
+              {diaryView === 'week' ? (c.weeklyDiary ?? copy.en.weeklyDiary) : (c.monthlyDiary ?? copy.en.monthlyDiary)}
+            </h2>
+            <p className="mt-2 text-sm text-slate-500">
+              {diaryView === 'week'
+                ? `${versions[selectedVersion].label} • ${c.week} ${selectedWeek} • ${formatDateRange(selectedWeekStart, selectedWeekEnd)}`
+                : `${versions[selectedVersion].label} • ${c.month} ${monthStartWeek <= 4 ? 1 : 2} • ${formatDateRange(monthStartDate, monthEndDate)}`}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 rounded-lg border border-slate-200 bg-slate-50 p-1">
+            <button
+              type="button"
+              onClick={() => onChangeView('week')}
+              className={`h-9 rounded-md px-4 text-sm font-semibold transition ${
+                diaryView === 'week' ? 'bg-slate-950 text-white' : 'text-slate-500 hover:bg-white'
+              }`}
+            >
+              {c.week}
+            </button>
+            <button
+              type="button"
+              onClick={() => onChangeView('month')}
+              className={`h-9 rounded-md px-4 text-sm font-semibold transition ${
+                diaryView === 'month' ? 'bg-slate-950 text-white' : 'text-slate-500 hover:bg-white'
+              }`}
+            >
+              {c.month}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {diaryView === 'week' ? (
+        <div className="grid gap-3 lg:grid-cols-7">
+          {weekEntries.map((entry) => (
+            <div key={entry.id} className={dayHeaderClass}>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-black text-slate-950">{tr(entry.label, lang)}</p>
+                  <p className="mt-1 text-xs font-semibold text-slate-500">{formatDate(entry.date)}</p>
+                </div>
+                <span className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-semibold text-slate-500">
+                  {entry.id === 'sun' ? c.weekendMemo : c.dailyDiary}
+                </span>
+              </div>
+              <div className="mt-3 min-h-32 rounded-lg border border-slate-200 bg-white p-3">
+                {entry.text ? (
+                  <p className="text-sm leading-6 text-slate-700 whitespace-pre-wrap">{entry.text}</p>
+                ) : (
+                  <p className="text-sm text-slate-400">{c.noDiaryEntries ?? copy.en.noDiaryEntries}</p>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="mb-3 grid grid-cols-7 gap-3">
+            {days.map((day) => (
+              <div key={day.id} className="px-1 text-sm font-black text-slate-500">
+                {tr(day.label, lang)}
+              </div>
+            ))}
+          </div>
+
+          <div className="grid gap-3">
+            {monthWeeks.map((weekBlock) => (
+              <div key={weekBlock.week} className="grid gap-3 lg:grid-cols-[84px_repeat(7,minmax(0,1fr))]">
+                <button
+                  type="button"
+                  onClick={() => onSelectWeek(selectedVersion, weekBlock.week)}
+                  className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-4 text-left transition hover:border-slate-400 hover:bg-white"
+                >
+                  <p className="text-sm font-black text-slate-950">{c.week} {weekBlock.week}</p>
+                  <p className="mt-1 text-xs font-semibold text-slate-500">
+                    {formatDateRange(getWeekStartDate(selectedVersion, weekBlock.week), addDays(getWeekStartDate(selectedVersion, weekBlock.week), 6))}
+                  </p>
+                </button>
+
+                {weekBlock.entries.map((entry) => (
+                  <div key={`${weekBlock.week}-${entry.id}`} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs font-black text-slate-950">{formatDate(entry.date)}</p>
+                      {entry.text ? (
+                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                          {entry.id === 'sun' ? c.weekendMemo : c.dailyDiary}
+                        </span>
+                      ) : null}
+                    </div>
+                    <div className="mt-2 min-h-24">
+                      {entry.text ? (
+                        <p className="max-h-20 overflow-hidden text-sm leading-5 text-slate-700">{getDiaryPreview(entry.text)}</p>
+                      ) : (
+                        <p className="text-xs text-slate-400">{c.noDiaryEntries ?? copy.en.noDiaryEntries}</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </section>
   )
 }
 
