@@ -1559,39 +1559,6 @@ export default function App() {
               <span>{totalXp} XP</span>
               <span>{nextLevel ? c.untilXp(nextLevel.min, levelProgress) : c.highestLevel}</span>
             </div>
-            {clientId && (
-              <div className="mt-3 border-t border-slate-200 pt-3">
-                {gToken ? (
-                  <div className="flex items-center gap-2 text-xs text-slate-500">
-                    <CalendarDays
-                      size={14}
-                      className={calSyncing ? 'animate-pulse text-blue-500' : calSynced ? 'text-emerald-500' : 'text-slate-400'}
-                    />
-                    <span>
-                      {calSyncing ? '캘린더 동기화 중...' : calSynced ? '오늘/내일 일정 동기화 완료' : '캘린더 연결됨'}
-                    </span>
-                    {calSynced && (
-                      <button
-                        type="button"
-                        onClick={() => syncCalendar(gToken, allUsersData, lang)}
-                        className="ml-auto text-xs font-black text-slate-400 hover:text-slate-700"
-                      >
-                        재동기화
-                      </button>
-                    )}
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => gTokenClientRef.current?.requestAccessToken({ prompt: 'consent' })}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 py-2 text-xs font-black text-slate-600 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700"
-                  >
-                    <CalendarDays size={14} />
-                    구글 캘린더 연결
-                  </button>
-                )}
-              </div>
-            )}
           </div>
         </header>
 
@@ -1714,6 +1681,17 @@ export default function App() {
                 selectedWeek={state.selectedWeek}
                 selectedDayId={selectedDay.id}
                 lang={lang}
+                calendarNode={clientId ? (gToken ? (
+                  <div className="flex items-center gap-2 text-xs text-slate-400">
+                    <CalendarDays size={13} className={calSyncing ? 'animate-pulse text-blue-400' : calSynced ? 'text-emerald-400' : 'text-slate-500'} />
+                    <span>{calSyncing ? '동기화 중...' : calSynced ? '동기화 완료' : '연결됨'}</span>
+                    {calSynced && <button type="button" onClick={() => { hasSyncedRef.current = false; syncCalendar(gToken, allUsersData, lang) }} className="font-black hover:text-white">재동기화</button>}
+                  </div>
+                ) : (
+                  <button type="button" onClick={() => gTokenClientRef.current?.requestAccessToken({ prompt: 'consent' })} className="flex items-center gap-1 text-xs font-black text-slate-400 hover:text-blue-400">
+                    <CalendarDays size={13} />연결
+                  </button>
+                )) : null}
               />
             </div>
 
@@ -1900,7 +1878,7 @@ function Stat({ label, value }) {
   )
 }
 
-function FamilyScheduleVisibility({ allUsersData, selectedVersion, selectedWeek, selectedDayId, lang }) {
+function FamilyScheduleVisibility({ allUsersData, selectedVersion, selectedWeek, selectedDayId, lang, calendarNode }) {
   const actualTodayRef = getTodayVersionWeekDay()
   const sections = [
     {
