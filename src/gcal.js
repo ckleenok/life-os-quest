@@ -18,7 +18,7 @@ async function apiFetch(token, path, options = {}) {
   const res = await fetch(`https://www.googleapis.com/calendar/v3${path}`, {
     ...options, headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', ...options.headers }
   })
-  if (res.status === 204) return null
+  if (res.status === 204 || res.status === 410) return null
   const data = await res.json()
   if (!res.ok) throw new Error(data?.error?.message ?? `API error ${res.status}`)
   return data
