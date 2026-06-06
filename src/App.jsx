@@ -1101,6 +1101,26 @@ function getDiaryPreview(text) {
   return text.replace(/\s+/g, ' ').trim()
 }
 
+function loadGoogleIdentityScript() {
+  if (window.google?.accounts?.oauth2) return Promise.resolve()
+  const existingScript = document.querySelector('script[src*="accounts.google.com/gsi/client"]')
+  if (existingScript) {
+    return new Promise((resolve, reject) => {
+      existingScript.addEventListener('load', resolve, { once: true })
+      existingScript.addEventListener('error', reject, { once: true })
+    })
+  }
+
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script')
+    script.src = 'https://accounts.google.com/gsi/client'
+    script.async = true
+    script.onload = resolve
+    script.onerror = reject
+    document.head.appendChild(script)
+  })
+}
+
 export default function App() {
   const [currentUserId, setCurrentUserId] = useState(loadCurrentUserId)
   const [state, setState] = useState(createDefaultState)
@@ -1116,24 +1136,6 @@ export default function App() {
   const lang = state.lang ?? 'en'
   const c = copy[lang]
   const currentUser = users.find((user) => user.id === currentUserId) ?? users[0]
-
-  useEffect(() => {
-    if (!clientId) return
-    const init = () => {
-      if (!window.google?.accounts?.oauth2) return
-      gTokenClientRef.current = initTokenClient(clientId, (res) => {
-        if (res.access_token) setGToken(res.access_token)
-      })
-      gTokenClientRef.current.requestAccessToken({ prompt: '' })
-    }
-    const script = document.querySelector('script[src*="accounts.google.com"]')
-    if (window.google?.accounts?.oauth2) {
-      init()
-    } else if (script) {
-      script.addEventListener('load', init)
-      return () => script.removeEventListener('load', init)
-    }
-  }, [clientId])
 
   const syncCalendar = useCallback(async (token, usersData, currentLang) => {
     if (!token || !usersData) return
@@ -1181,6 +1183,21 @@ export default function App() {
   }, [])
 
   const hasSyncedRef = useRef(false)
+  const connectGoogleCalendar = useCallback(async () => {
+    if (!clientId) return
+    try {
+      await loadGoogleIdentityScript()
+      if (!gTokenClientRef.current) {
+        gTokenClientRef.current = initTokenClient(clientId, (res) => {
+          if (res.access_token) setGToken(res.access_token)
+        })
+      }
+      gTokenClientRef.current.requestAccessToken({ prompt: 'consent' })
+    } catch (err) {
+      console.error('Google Calendar connect failed', err)
+    }
+  }, [clientId])
+
   useEffect(() => {
     if (gToken && allUsersData && !hasSyncedRef.current) {
       hasSyncedRef.current = true
@@ -1688,7 +1705,7 @@ export default function App() {
                     {calSynced && <button type="button" onClick={() => { hasSyncedRef.current = false; syncCalendar(gToken, allUsersData, lang) }} className="font-black hover:text-white">재동기화</button>}
                   </div>
                 ) : (
-                  <button type="button" onClick={() => gTokenClientRef.current?.requestAccessToken({ prompt: 'consent' })} className="flex items-center gap-1 text-xs font-black text-slate-400 hover:text-blue-400">
+                  <button type="button" onClick={connectGoogleCalendar} className="flex items-center gap-1 text-xs font-black text-slate-400 hover:text-blue-400">
                     <CalendarDays size={13} />연결
                   </button>
                 )) : null}
