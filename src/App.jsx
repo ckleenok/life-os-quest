@@ -1152,7 +1152,7 @@ export default function App() {
         if (!dayObj) continue
         const missionUsers = {}
         usersData.forEach(({ user, state: us }) => {
-          getMissionIdsForDay(ref.version, ref.week, dayObj, us.schedules).forEach((missionId) => {
+          (us.schedules?.[`${ref.version}|w${ref.week}`]?.[ref.dayId] ?? getMissionIdsForDay(ref.version, ref.week, dayObj, us.schedules)).forEach((missionId) => {
             if (!missionUsers[missionId]) missionUsers[missionId] = []
             missionUsers[missionId].push(user.name)
           })
