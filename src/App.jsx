@@ -1142,7 +1142,7 @@ export default function App() {
     try {
       const today = getTodayVersionWeekDay()
       const tomorrow = getNextDayRef(today.version, today.week, today.dayId)
-      const toDateStr = (d) => d.toISOString().split('T')[0]
+      const toDateStr = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
       const targets = [
         { ref: today, dateStr: toDateStr(new Date()) },
         { ref: tomorrow, dateStr: toDateStr(addDays(new Date(), 1)) },
