@@ -1180,8 +1180,12 @@ export default function App() {
     }
   }, [])
 
+  const hasSyncedRef = useRef(false)
   useEffect(() => {
-    if (gToken && allUsersData) syncCalendar(gToken, allUsersData, lang)
+    if (gToken && allUsersData && !hasSyncedRef.current) {
+      hasSyncedRef.current = true
+      syncCalendar(gToken, allUsersData, lang)
+    }
   }, [gToken, allUsersData])
 
   useEffect(() => {

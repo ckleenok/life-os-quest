@@ -24,9 +24,9 @@ async function apiFetch(token, path, options = {}) {
   return data
 }
 export async function listLifeOsEvents(token, dateStr) {
-  const params = new URLSearchParams({ timeMin:`${dateStr}T00:00:00+09:00`, timeMax:`${dateStr}T23:59:59+09:00`, privateExtendedProperty:`source=${SOURCE}`, singleEvents:'true', maxResults:'50' })
+  const params = new URLSearchParams({ timeMin:`${dateStr}T00:00:00+09:00`, timeMax:`${dateStr}T23:59:59+09:00`, singleEvents:'true', maxResults:'100' })
   const data = await apiFetch(token, `/calendars/${encodeURIComponent(CAL_ID)}/events?${params}`)
-  return data?.items ?? []
+  return (data?.items ?? []).filter(ev => ev.extendedProperties?.private?.source === SOURCE)
 }
 export async function createCalendarEvent(token, { date, missionId, missionName, detail, userNames, xp }) {
   const emoji = MISSION_EMOJIS[missionId] ?? '⭐'
