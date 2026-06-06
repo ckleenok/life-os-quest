@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { fetchUserState, upsertUserState } from './supabase.js'
 import { motion } from 'framer-motion'
 import {
   BookOpen,
   Bot,
   CalendarCheck,
+  CalendarDays,
   CheckCircle2,
   Clock3,
   Compass,
@@ -20,6 +21,7 @@ import {
   Trophy,
   UserRound,
 } from 'lucide-react'
+import { initTokenClient, listLifeOsEvents, createCalendarEvent, deleteCalendarEvent } from './gcal.js'
 
 const STORAGE_KEY = 'life-os-quest-state-v4'
 const USER_STORAGE_PREFIX = 'life-game-user-state-v1'
@@ -1105,10 +1107,82 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true)
   const [allUsersData, setAllUsersData] = useState(null)
   const [progressUserId, setProgressUserId] = useState(null)
+  const [gToken, setGToken] = useState(null)
+  const [calSyncing, setCalSyncing] = useState(false)
+  const [calSynced, setCalSynced] = useState(false)
   const saveTimerRef = useRef(null)
+  const gTokenClientRef = useRef(null)
+  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
   const lang = state.lang ?? 'en'
   const c = copy[lang]
   const currentUser = users.find((user) => user.id === currentUserId) ?? users[0]
+
+  useEffect(() => {
+    if (!clientId) return
+    const init = () => {
+      if (!window.google?.accounts?.oauth2) return
+      gTokenClientRef.current = initTokenClient(clientId, (res) => {
+        if (res.access_token) setGToken(res.access_token)
+      })
+      gTokenClientRef.current.requestAccessToken({ prompt: '' })
+    }
+    const script = document.querySelector('script[src*="accounts.google.com"]')
+    if (window.google?.accounts?.oauth2) {
+      init()
+    } else if (script) {
+      script.addEventListener('load', init)
+      return () => script.removeEventListener('load', init)
+    }
+  }, [clientId])
+
+  const syncCalendar = useCallback(async (token, usersData, currentLang) => {
+    if (!token || !usersData) return
+    setCalSyncing(true)
+    setCalSynced(false)
+    try {
+      const today = getTodayVersionWeekDay()
+      const tomorrow = getNextDayRef(today.version, today.week, today.dayId)
+      const toDateStr = (d) => d.toISOString().split('T')[0]
+      const targets = [
+        { ref: today, dateStr: toDateStr(new Date()) },
+        { ref: tomorrow, dateStr: toDateStr(addDays(new Date(), 1)) },
+      ]
+      for (const { ref, dateStr } of targets) {
+        const dayObj = days.find((d) => d.id === ref.dayId)
+        if (!dayObj) continue
+        const missionUsers = {}
+        usersData.forEach(({ user, state: us }) => {
+          getMissionIdsForDay(ref.version, ref.week, dayObj, us.schedules).forEach((missionId) => {
+            if (!missionUsers[missionId]) missionUsers[missionId] = []
+            missionUsers[missionId].push(user.name)
+          })
+        })
+        const existing = await listLifeOsEvents(token, dateStr)
+        await Promise.all(existing.map((ev) => deleteCalendarEvent(token, ev.id)))
+        for (const [missionId, userNames] of Object.entries(missionUsers)) {
+          const mission = missionMap[missionId]
+          if (!mission) continue
+          await createCalendarEvent(token, {
+            date: dateStr,
+            missionId,
+            missionName: tr(mission.ko, currentLang),
+            detail: tr(mission.detail, currentLang),
+            userNames,
+            xp: mission.xp,
+          })
+        }
+      }
+      setCalSynced(true)
+    } catch (err) {
+      console.error('Calendar sync failed', err)
+    } finally {
+      setCalSyncing(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (gToken && allUsersData) syncCalendar(gToken, allUsersData, lang)
+  }, [gToken, allUsersData])
 
   useEffect(() => {
     setIsLoading(true)
@@ -1481,6 +1555,39 @@ export default function App() {
               <span>{totalXp} XP</span>
               <span>{nextLevel ? c.untilXp(nextLevel.min, levelProgress) : c.highestLevel}</span>
             </div>
+            {clientId && (
+              <div className="mt-3 border-t border-slate-200 pt-3">
+                {gToken ? (
+                  <div className="flex items-center gap-2 text-xs text-slate-500">
+                    <CalendarDays
+                      size={14}
+                      className={calSyncing ? 'animate-pulse text-blue-500' : calSynced ? 'text-emerald-500' : 'text-slate-400'}
+                    />
+                    <span>
+                      {calSyncing ? '캘린더 동기화 중...' : calSynced ? '오늘/내일 일정 동기화 완료' : '캘린더 연결됨'}
+                    </span>
+                    {calSynced && (
+                      <button
+                        type="button"
+                        onClick={() => syncCalendar(gToken, allUsersData, lang)}
+                        className="ml-auto text-xs font-black text-slate-400 hover:text-slate-700"
+                      >
+                        재동기화
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => gTokenClientRef.current?.requestAccessToken({ prompt: 'consent' })}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 py-2 text-xs font-black text-slate-600 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700"
+                  >
+                    <CalendarDays size={14} />
+                    구글 캘린더 연결
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </header>
 
