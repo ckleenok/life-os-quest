@@ -2487,7 +2487,7 @@ function DiaryKnowledgeGraph({ entries, graph, insights, diaryView, lang }) {
           </div>
         </div>
 
-        <div className="mt-4 overflow-hidden rounded-lg border border-slate-200 bg-slate-950">
+        <div className="mt-4 overflow-hidden rounded-lg border border-slate-200 bg-[#0b1220]">
           {hasGraph ? (
             <svg
               viewBox={`0 0 ${layout.width} ${layout.height}`}
@@ -2497,12 +2497,12 @@ function DiaryKnowledgeGraph({ entries, graph, insights, diaryView, lang }) {
               style={{ fontFamily: 'Inter, Pretendard, system-ui, sans-serif' }}
             >
               <defs>
-                <radialGradient id="diaryNodeGradient" cx="35%" cy="30%" r="70%">
-                  <stop offset="0%" stopColor="#f8fbff" />
-                  <stop offset="45%" stopColor="#38bdf8" />
-                  <stop offset="100%" stopColor="#00d7c0" />
-                </radialGradient>
+                <pattern id="diaryGraphGrid" width="36" height="36" patternUnits="userSpaceOnUse">
+                  <path d="M 36 0 L 0 0 0 36" fill="none" stroke="#1e293b" strokeWidth="1" opacity="0.35" />
+                </pattern>
               </defs>
+              <rect width={layout.width} height={layout.height} fill="#0b1220" />
+              <rect width={layout.width} height={layout.height} fill="url(#diaryGraphGrid)" />
               {layout.positionedEdges.map((edge) => (
                 <line
                   key={`${edge.source}-${edge.target}`}
@@ -2510,9 +2510,9 @@ function DiaryKnowledgeGraph({ entries, graph, insights, diaryView, lang }) {
                   y1={edge.sourcePos.y}
                   x2={edge.targetPos.x}
                   y2={edge.targetPos.y}
-                  stroke="#38bdf8"
-                  strokeOpacity={Math.min(0.58, 0.14 + edge.count * 0.08)}
-                  strokeWidth={Math.min(7, 1 + edge.count)}
+                  stroke="#94a3b8"
+                  strokeOpacity={Math.min(0.42, 0.12 + edge.count * 0.05)}
+                  strokeWidth={Math.min(3.5, 0.75 + edge.count * 0.45)}
                 />
               ))}
               {layout.positionedNodes.map((node) => (
@@ -2520,35 +2520,36 @@ function DiaryKnowledgeGraph({ entries, graph, insights, diaryView, lang }) {
                   <circle
                     cx={node.x}
                     cy={node.y}
-                    r={node.radius}
-                    fill="url(#diaryNodeGradient)"
-                    opacity="0.95"
+                    r={node.radius + 9}
+                    fill="#38bdf8"
+                    opacity="0.08"
                   />
                   <circle
                     cx={node.x}
                     cy={node.y}
-                    r={node.radius + 4}
-                    fill="none"
-                    stroke="#e0f2fe"
-                    strokeOpacity="0.22"
+                    r={node.radius}
+                    fill="#101827"
+                    stroke="#38bdf8"
+                    strokeOpacity="0.88"
+                    strokeWidth="1.5"
                   />
                   <text
                     x={node.x}
                     y={node.y + node.radius + 18}
                     textAnchor="middle"
-                    fill="#f8fbff"
-                    fontSize="15"
-                    fontWeight="900"
+                    fill="#cbd5e1"
+                    fontSize="13"
+                    fontWeight="800"
                   >
                     {node.label.length > 10 ? `${node.label.slice(0, 10)}...` : node.label}
                   </text>
                   <text
                     x={node.x}
-                    y={node.y + 5}
+                    y={node.y + 4}
                     textAnchor="middle"
-                    fill="#06101d"
-                    fontSize="13"
-                    fontWeight="900"
+                    fill="#f8fafc"
+                    fontSize="12"
+                    fontWeight="800"
                   >
                     {node.count}
                   </text>
