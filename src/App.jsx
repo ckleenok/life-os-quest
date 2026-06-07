@@ -2004,6 +2004,12 @@ export default function App() {
             diaryView={state.diaryView ?? 'week'}
             lang={lang}
             onChangeView={(diaryView) => updateState({ diaryView })}
+            onNavigatePeriod={(versionKey, week) =>
+              updateState({
+                selectedVersion: versionKey,
+                selectedWeek: week,
+              })
+            }
             onSelectWeek={(versionKey, week) =>
               updateState({
                 activeTab: 'quest',
@@ -2628,7 +2634,7 @@ function DiaryKnowledgeGraph({ entries, graph, insights, diaryView, lang }) {
   )
 }
 
-function DiaryDashboard({ memos, selectedVersion, selectedWeek, diaryView, lang, onChangeView, onSelectWeek }) {
+function DiaryDashboard({ memos, selectedVersion, selectedWeek, diaryView, lang, onChangeView, onNavigatePeriod, onSelectWeek }) {
   const c = copy[lang]
   const weekEntries = getWeekDiaryEntries(memos, selectedVersion, selectedWeek)
   const monthWeeks = getMonthDiaryEntries(memos, selectedVersion, selectedWeek)
@@ -2644,6 +2650,14 @@ function DiaryDashboard({ memos, selectedVersion, selectedWeek, diaryView, lang,
   const monthEndDate = addDays(getWeekStartDate(selectedVersion, monthEndWeek), 6)
   const selectedWeekStart = getWeekStartDate(selectedVersion, selectedWeek)
   const selectedWeekEnd = addDays(selectedWeekStart, 6)
+  const previousPeriod = diaryView === 'week'
+    ? getPrevVersionWeek(selectedVersion, selectedWeek)
+    : getPrevVersionWeek(selectedVersion, monthStartWeek)
+  const nextPeriod = diaryView === 'week'
+    ? getNextVersionWeek(selectedVersion, selectedWeek)
+    : getNextVersionWeek(selectedVersion, monthEndWeek)
+  const previousLabel = lang === 'ko' ? '이전' : 'Prev'
+  const nextLabel = lang === 'ko' ? '다음' : 'Next'
   const dayHeaderClass = 'rounded-lg border border-slate-200 bg-slate-50 p-3'
 
   return (
@@ -2662,25 +2676,45 @@ function DiaryDashboard({ memos, selectedVersion, selectedWeek, diaryView, lang,
             </p>
           </div>
 
-          <div className="grid grid-cols-2 rounded-lg border border-slate-200 bg-slate-50 p-1">
-            <button
-              type="button"
-              onClick={() => onChangeView('week')}
-              className={`h-9 rounded-md px-4 text-sm font-semibold transition ${
-                diaryView === 'week' ? 'bg-slate-950 text-white' : 'text-slate-500 hover:bg-white'
-              }`}
-            >
-              {c.week}
-            </button>
-            <button
-              type="button"
-              onClick={() => onChangeView('month')}
-              className={`h-9 rounded-md px-4 text-sm font-semibold transition ${
-                diaryView === 'month' ? 'bg-slate-950 text-white' : 'text-slate-500 hover:bg-white'
-              }`}
-            >
-              {c.month}
-            </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="grid grid-cols-2 rounded-lg border border-slate-200 bg-slate-50 p-1">
+              <button
+                type="button"
+                onClick={() => onChangeView('week')}
+                className={`h-9 rounded-md px-4 text-sm font-semibold transition ${
+                  diaryView === 'week' ? 'bg-slate-950 text-white' : 'text-slate-500 hover:bg-white'
+                }`}
+              >
+                {c.week}
+              </button>
+              <button
+                type="button"
+                onClick={() => onChangeView('month')}
+                className={`h-9 rounded-md px-4 text-sm font-semibold transition ${
+                  diaryView === 'month' ? 'bg-slate-950 text-white' : 'text-slate-500 hover:bg-white'
+                }`}
+              >
+                {c.month}
+              </button>
+            </div>
+            <div className="grid grid-cols-2 rounded-lg border border-slate-200 bg-slate-50 p-1">
+              <button
+                type="button"
+                disabled={!previousPeriod}
+                onClick={() => previousPeriod && onNavigatePeriod(previousPeriod.version, previousPeriod.week)}
+                className="h-9 rounded-md px-3 text-sm font-black text-slate-500 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-35"
+              >
+                ‹ {previousLabel}
+              </button>
+              <button
+                type="button"
+                disabled={!nextPeriod}
+                onClick={() => nextPeriod && onNavigatePeriod(nextPeriod.version, nextPeriod.week)}
+                className="h-9 rounded-md px-3 text-sm font-black text-slate-500 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-35"
+              >
+                {nextLabel} ›
+              </button>
+            </div>
           </div>
         </div>
       </div>
