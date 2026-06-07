@@ -1180,9 +1180,12 @@ function buildDiaryKnowledgeGraph(entries) {
     })
   })
 
-  const nodes = [...nodeCounts.entries()]
+  const rankedNodes = [...nodeCounts.entries()]
     .sort((a, b) => b[1] - a[1])
-    .slice(0, 16)
+  const frequentNodes = rankedNodes.filter(([, count]) => count >= 2)
+  const visibleNodeEntries = (frequentNodes.length >= 3 ? frequentNodes : rankedNodes.slice(0, 5))
+    .slice(0, 10)
+  const nodes = visibleNodeEntries
     .map(([label, count], index) => ({ id: label, label, count, index }))
   const nodeIds = new Set(nodes.map((node) => node.id))
   const edges = [...edgeCounts.entries()]
@@ -1190,9 +1193,9 @@ function buildDiaryKnowledgeGraph(entries) {
       const [source, target] = key.split('::')
       return { source, target, count }
     })
-    .filter((edge) => nodeIds.has(edge.source) && nodeIds.has(edge.target))
+    .filter((edge) => edge.count >= 2 && nodeIds.has(edge.source) && nodeIds.has(edge.target))
     .sort((a, b) => b.count - a.count)
-    .slice(0, 24)
+    .slice(0, 12)
 
   return { nodes, edges }
 }
@@ -1207,7 +1210,7 @@ function getDiaryGraphLayout(nodes, edges) {
     nodes.map((node, index) => {
       if (index === 0) return [node.id, { x: centerX, y: centerY }]
       const angle = ((index - 1) / Math.max(1, nodes.length - 1)) * Math.PI * 2 - Math.PI / 2
-      const ring = index <= 7 ? 126 : 172
+      const ring = nodes.length <= 6 ? 152 : index <= 6 ? 132 : 176
       return [
         node.id,
         {
