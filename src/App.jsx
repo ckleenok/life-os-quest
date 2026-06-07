@@ -1101,6 +1101,173 @@ function getDiaryPreview(text) {
   return text.replace(/\s+/g, ' ').trim()
 }
 
+const diaryConcepts = [
+  { label: '가족', terms: ['가족', '엄마', '아빠', '부모', '아이', '아이들', 'ck', 'ella', 'mark', 'sally'] },
+  { label: '대화', terms: ['대화', '말', '이야기', '질문', '토론', '설명', 'talk'] },
+  { label: '운동', terms: ['운동', '헬스', '걷기', '산책', '러닝', 'workout', 'fitness'] },
+  { label: '독서', terms: ['독서', '책', '읽', 'reading', 'book'] },
+  { label: '공부', terms: ['공부', '학습', '배움', '숙제', '수업', 'study', 'learn'] },
+  { label: 'AI/코딩', terms: ['ai', 'codex', '코딩', '개발', 'github', 'vercel', '프로젝트'] },
+  { label: '루틴', terms: ['루틴', '계획', '습관', '일정', '반복', 'routine', 'schedule'] },
+  { label: '감정', terms: ['기분', '마음', '감정', '불안', '행복', '짜증', '슬픔', '좋았다', '힘들'] },
+  { label: '성장', terms: ['성장', '깨달', '배웠', '개선', '도전', '목표', 'growth'] },
+  { label: '휴식', terms: ['휴식', '잠', '수면', '쉬', '피곤', '회복', 'rest', 'sleep'] },
+  { label: '감사', terms: ['감사', '고마', '칭찬', '좋은', 'thank'] },
+  { label: '어려움', terms: ['어려', '막힘', '실패', '문제', '못했', '힘들', 'confused'] },
+  { label: '돈/투자', terms: ['돈', '주식', '투자', '경제', '가격', '수익', 'portfolio'] },
+  { label: '친구', terms: ['친구', '학교', '선생님', '반', 'friend', 'school'] },
+]
+
+const diaryStopWords = new Set([
+  '오늘', '이번', '내일', '그리고', '하지만', '그래서', '나는', '우리는', '조금', '정말', '너무', '다음', '하나',
+  '것', '수', '더', '잘', '좀', '때', '했다', '했다.', '하는', '하고', '같다', '있다', '없다', '되었다',
+  'the', 'and', 'for', 'with', 'that', 'this', 'was', 'were', 'will', 'next', 'today', 'tomorrow',
+])
+
+function tokenizeDiaryText(text) {
+  return text
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s/-]/gu, ' ')
+    .split(/\s+/)
+    .map((word) => word.trim())
+    .filter((word) => word.length >= 2 && !diaryStopWords.has(word))
+}
+
+function getDiaryConceptLabels(text) {
+  const lowerText = text.toLowerCase()
+  return diaryConcepts
+    .filter((concept) => concept.terms.some((term) => lowerText.includes(term.toLowerCase())))
+    .map((concept) => concept.label)
+}
+
+function getPersonalDiaryEntries(memos, version, selectedWeek, diaryView) {
+  const weekNumbers =
+    diaryView === 'month'
+      ? Array.from({ length: 4 }, (_, index) => getMonthBlockStartWeek(selectedWeek) + index)
+      : [selectedWeek]
+
+  return weekNumbers.flatMap((week) =>
+    days.map((day) => ({
+      version,
+      week,
+      day,
+      date: getDayDate(version, week, day.id),
+      text: getDiaryEntry(memos, version, week, day.id),
+    })).filter((entry) => entry.text)
+  )
+}
+
+function buildDiaryKnowledgeGraph(entries) {
+  const nodeCounts = new Map()
+  const edgeCounts = new Map()
+
+  entries.forEach((entry) => {
+    const conceptLabels = getDiaryConceptLabels(entry.text)
+    const tokenCounts = new Map()
+    tokenizeDiaryText(entry.text).forEach((token) => tokenCounts.set(token, (tokenCounts.get(token) ?? 0) + 1))
+    const topTokens = [...tokenCounts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([token]) => token)
+    const entryLabels = [...new Set([...conceptLabels, ...topTokens])].slice(0, 8)
+
+    entryLabels.forEach((label) => nodeCounts.set(label, (nodeCounts.get(label) ?? 0) + 1))
+    entryLabels.forEach((source, sourceIndex) => {
+      entryLabels.slice(sourceIndex + 1).forEach((target) => {
+        const key = [source, target].sort().join('::')
+        edgeCounts.set(key, (edgeCounts.get(key) ?? 0) + 1)
+      })
+    })
+  })
+
+  const nodes = [...nodeCounts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 16)
+    .map(([label, count], index) => ({ id: label, label, count, index }))
+  const nodeIds = new Set(nodes.map((node) => node.id))
+  const edges = [...edgeCounts.entries()]
+    .map(([key, count]) => {
+      const [source, target] = key.split('::')
+      return { source, target, count }
+    })
+    .filter((edge) => nodeIds.has(edge.source) && nodeIds.has(edge.target))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 24)
+
+  return { nodes, edges }
+}
+
+function getDiaryGraphLayout(nodes, edges) {
+  const width = 720
+  const height = 420
+  const centerX = width / 2
+  const centerY = height / 2
+  const maxCount = Math.max(1, ...nodes.map((node) => node.count))
+  const positions = Object.fromEntries(
+    nodes.map((node, index) => {
+      if (index === 0) return [node.id, { x: centerX, y: centerY }]
+      const angle = ((index - 1) / Math.max(1, nodes.length - 1)) * Math.PI * 2 - Math.PI / 2
+      const ring = index <= 7 ? 126 : 172
+      return [
+        node.id,
+        {
+          x: centerX + Math.cos(angle) * ring,
+          y: centerY + Math.sin(angle) * ring,
+        },
+      ]
+    })
+  )
+
+  return {
+    width,
+    height,
+    positionedNodes: nodes.map((node) => ({
+      ...node,
+      ...positions[node.id],
+      radius: 18 + Math.round((node.count / maxCount) * 18),
+    })),
+    positionedEdges: edges
+      .map((edge) => ({ ...edge, sourcePos: positions[edge.source], targetPos: positions[edge.target] }))
+      .filter((edge) => edge.sourcePos && edge.targetPos),
+  }
+}
+
+function buildDiaryInsights(entries, graph, lang) {
+  if (!entries.length || !graph.nodes.length) {
+    return {
+      realization: lang === 'ko'
+        ? '아직 분석할 일기가 충분하지 않습니다. 이번 주에 한 줄씩만 남겨도 그래프가 살아납니다.'
+        : 'There are not enough diary entries yet. Even one line a day will make the graph useful.',
+      actions: lang === 'ko'
+        ? ['오늘 한 일보다 느낀 점을 한 문장 추가하기', '오늘 떠오른 질문 하나 기록하기', '일요일에 이번 주 반복 단어를 다시 보기']
+        : ['Add one sentence about how the day felt', 'Save one question from today', 'Review repeated words on Sunday'],
+      bridge: null,
+    }
+  }
+
+  const top = graph.nodes.slice(0, 4).map((node) => node.label)
+  const strongestEdge = graph.edges[0]
+  const bridge = strongestEdge ? `${strongestEdge.source} ↔ ${strongestEdge.target}` : top.slice(0, 2).join(' ↔ ')
+
+  return {
+    realization: lang === 'ko'
+      ? `이번 기록에서는 ${top.join(', ')}이 가장 많이 반복됐습니다. 특히 ${bridge} 연결이 강해서, 지금의 관심사가 단순한 활동보다 생활 리듬과 감정의 패턴으로 이어지고 있어요.`
+      : `This period is centered on ${top.join(', ')}. The strongest connection is ${bridge}, which suggests your notes are linking activities with rhythm and emotion.`,
+    actions: lang === 'ko'
+      ? [
+          `${top[0]}에 대해 “좋았던 점 1개, 막힌 점 1개”를 적기`,
+          `${bridge}를 주제로 10분 회고 메모 쓰기`,
+          `다음 주에 반복할 작은 행동 하나를 정하고 매일 체크하기`,
+        ]
+      : [
+          `Write one good thing and one blocker about ${top[0]}`,
+          `Use ${bridge} for a 10-minute reflection note`,
+          `Choose one tiny action to repeat and check daily next week`,
+        ],
+    bridge,
+  }
+}
+
 function loadGoogleIdentityScript() {
   if (window.google?.accounts?.oauth2) return Promise.resolve()
   const existingScript = document.querySelector('script[src*="accounts.google.com/gsi/client"]')
@@ -2294,10 +2461,179 @@ function StatRadar({ lang, c, statTotals, maxStatTotals, overallPower }) {
   )
 }
 
+function DiaryKnowledgeGraph({ entries, graph, insights, diaryView, lang }) {
+  const layout = useMemo(() => getDiaryGraphLayout(graph.nodes, graph.edges), [graph])
+  const hasGraph = graph.nodes.length > 0
+  const title = lang === 'ko' ? '개인 Knowledge Graph' : 'Personal Knowledge Graph'
+  const subtitle = lang === 'ko'
+    ? `${diaryView === 'week' ? '이번 주' : '이번 달'} 내 일기에서 반복 주제와 연결을 찾았습니다.`
+    : `Themes and connections from your ${diaryView === 'week' ? 'weekly' : 'monthly'} diary entries.`
+  const entryLabel = lang === 'ko' ? '기록' : 'entries'
+
+  return (
+    <section className="grid gap-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(20rem,0.75fr)]">
+      <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-sm font-black text-emerald-600">{title}</p>
+            <h3 className="mt-1 text-2xl font-black text-slate-950">
+              {lang === 'ko' ? '일기에서 보이는 생각의 지도' : 'A map of recurring thoughts'}
+            </h3>
+            <p className="mt-2 text-sm leading-6 text-slate-500">{subtitle}</p>
+          </div>
+          <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-right">
+            <p className="text-2xl font-black text-slate-950">{entries.length}</p>
+            <p className="text-xs font-bold text-slate-500">{entryLabel}</p>
+          </div>
+        </div>
+
+        <div className="mt-4 overflow-hidden rounded-lg border border-slate-200 bg-slate-950">
+          {hasGraph ? (
+            <svg
+              viewBox={`0 0 ${layout.width} ${layout.height}`}
+              className="h-[22rem] w-full"
+              role="img"
+              aria-label={title}
+              style={{ fontFamily: 'Inter, Pretendard, system-ui, sans-serif' }}
+            >
+              <defs>
+                <radialGradient id="diaryNodeGradient" cx="35%" cy="30%" r="70%">
+                  <stop offset="0%" stopColor="#f8fbff" />
+                  <stop offset="45%" stopColor="#38bdf8" />
+                  <stop offset="100%" stopColor="#00d7c0" />
+                </radialGradient>
+              </defs>
+              {layout.positionedEdges.map((edge) => (
+                <line
+                  key={`${edge.source}-${edge.target}`}
+                  x1={edge.sourcePos.x}
+                  y1={edge.sourcePos.y}
+                  x2={edge.targetPos.x}
+                  y2={edge.targetPos.y}
+                  stroke="#38bdf8"
+                  strokeOpacity={Math.min(0.58, 0.14 + edge.count * 0.08)}
+                  strokeWidth={Math.min(7, 1 + edge.count)}
+                />
+              ))}
+              {layout.positionedNodes.map((node) => (
+                <g key={node.id}>
+                  <circle
+                    cx={node.x}
+                    cy={node.y}
+                    r={node.radius}
+                    fill="url(#diaryNodeGradient)"
+                    opacity="0.95"
+                  />
+                  <circle
+                    cx={node.x}
+                    cy={node.y}
+                    r={node.radius + 4}
+                    fill="none"
+                    stroke="#e0f2fe"
+                    strokeOpacity="0.22"
+                  />
+                  <text
+                    x={node.x}
+                    y={node.y + node.radius + 18}
+                    textAnchor="middle"
+                    fill="#f8fbff"
+                    fontSize="15"
+                    fontWeight="900"
+                  >
+                    {node.label.length > 10 ? `${node.label.slice(0, 10)}...` : node.label}
+                  </text>
+                  <text
+                    x={node.x}
+                    y={node.y + 5}
+                    textAnchor="middle"
+                    fill="#06101d"
+                    fontSize="13"
+                    fontWeight="900"
+                  >
+                    {node.count}
+                  </text>
+                </g>
+              ))}
+            </svg>
+          ) : (
+            <div className="grid min-h-[22rem] place-items-center p-6 text-center">
+              <div>
+                <NotebookPen size={34} className="mx-auto text-slate-500" />
+                <p className="mt-3 text-lg font-black text-white">
+                  {lang === 'ko' ? '아직 연결할 일기가 없습니다' : 'No diary graph yet'}
+                </p>
+            <p className="mt-2 max-w-md text-sm leading-6 text-slate-400">
+              {lang === 'ko'
+                    ? '일기를 한 줄이라도 쓰면 키워드 노드가 생기고, 여러 기록이 쌓이면 연결선이 나타납니다.'
+                    : 'Once you write a diary entry, keyword nodes will appear. Connections grow as entries accumulate.'}
+            </p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <aside className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="grid h-10 w-10 place-items-center rounded-lg bg-emerald-50 text-emerald-700">
+            <Sparkles size={21} />
+          </div>
+          <div>
+            <p className="text-sm font-black text-emerald-600">
+              {lang === 'ko' ? '자동 인사이트' : 'Auto Insight'}
+            </p>
+            <h3 className="text-lg font-black text-slate-950">
+              {lang === 'ko' ? '이번주의 깨달음' : 'Reflection'}
+            </h3>
+          </div>
+        </div>
+        <p className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm font-bold leading-6 text-slate-700">
+          {insights.realization}
+        </p>
+
+        <h4 className="mt-5 text-sm font-black text-slate-950">
+          {lang === 'ko' ? '다음 주 추천 행동' : 'Recommended Next Actions'}
+        </h4>
+        <div className="mt-3 grid gap-2">
+          {insights.actions.map((action, index) => (
+            <div key={action} className="flex gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-slate-950 text-xs font-black text-white">
+                {index + 1}
+              </span>
+              <p className="text-sm font-bold leading-6 text-slate-700">{action}</p>
+            </div>
+          ))}
+        </div>
+
+        {graph.nodes.length > 0 && (
+          <div className="mt-5">
+            <p className="text-sm font-black text-slate-950">
+              {lang === 'ko' ? '주요 노드' : 'Top Nodes'}
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {graph.nodes.slice(0, 8).map((node) => (
+                <span key={node.id} className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-black text-slate-500">
+                  {node.label} · {node.count}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </aside>
+    </section>
+  )
+}
+
 function DiaryDashboard({ memos, selectedVersion, selectedWeek, diaryView, lang, onChangeView, onSelectWeek }) {
   const c = copy[lang]
   const weekEntries = getWeekDiaryEntries(memos, selectedVersion, selectedWeek)
   const monthWeeks = getMonthDiaryEntries(memos, selectedVersion, selectedWeek)
+  const diaryEntries = useMemo(
+    () => getPersonalDiaryEntries(memos, selectedVersion, selectedWeek, diaryView),
+    [memos, selectedVersion, selectedWeek, diaryView],
+  )
+  const diaryGraph = useMemo(() => buildDiaryKnowledgeGraph(diaryEntries), [diaryEntries])
+  const diaryInsights = useMemo(() => buildDiaryInsights(diaryEntries, diaryGraph, lang), [diaryEntries, diaryGraph, lang])
   const monthStartWeek = getMonthBlockStartWeek(selectedWeek)
   const monthEndWeek = monthStartWeek + 3
   const monthStartDate = getWeekStartDate(selectedVersion, monthStartWeek)
@@ -2344,6 +2680,14 @@ function DiaryDashboard({ memos, selectedVersion, selectedWeek, diaryView, lang,
           </div>
         </div>
       </div>
+
+      <DiaryKnowledgeGraph
+        entries={diaryEntries}
+        graph={diaryGraph}
+        insights={diaryInsights}
+        diaryView={diaryView}
+        lang={lang}
+      />
 
       {diaryView === 'week' ? (
         <div className="grid gap-3 lg:grid-cols-7">
