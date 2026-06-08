@@ -641,6 +641,7 @@ const createDefaultState = () => {
     diaryView: 'week',
     lang: 'en',
     showToc: true,
+    lastOpenedDate: null,
     completed: {},
     memos: {},
     schedules: {},
@@ -836,6 +837,20 @@ function getTodayVersionWeekDay() {
   }
   // After program end, stay on last week
   return { version: 'v3', week: 8, dayId: 'mon' }
+}
+
+function getLocalDateKey(date = new Date()) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+}
+
+function applyFirstOpenToday(state) {
+  const todayKey = getLocalDateKey()
+  if (state.lastOpenedDate === todayKey) return state
+  return {
+    ...state,
+    ...getTodayVersionWeekDay(),
+    lastOpenedDate: todayKey,
+  }
 }
 
 function getNextVersionWeek(version, week) {
@@ -1379,18 +1394,17 @@ export default function App() {
     setIsLoading(true)
     fetchUserState(currentUserId)
       .then((remoteState) => {
-        const today = getTodayVersionWeekDay()
         if (remoteState) {
-          setState(migrateState({ ...createDefaultState(), ...remoteState, ...today }))
+          setState(applyFirstOpenToday(migrateState({ ...createDefaultState(), ...remoteState })))
         } else {
           const localState = loadState(currentUserId)
-          const merged = { ...localState, ...today }
+          const merged = applyFirstOpenToday(localState)
           setState(merged)
           upsertUserState(currentUserId, merged).catch(console.error)
         }
       })
       .catch(() => {
-        setState({ ...loadState(currentUserId), ...getTodayVersionWeekDay() })
+        setState(applyFirstOpenToday(loadState(currentUserId)))
       })
       .finally(() => setIsLoading(false))
   }, [currentUserId])
