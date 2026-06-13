@@ -2636,12 +2636,12 @@ function StatRadar({ lang, c, statTotals, maxStatTotals, overallPower }) {
             </g>
           )
         })}
+        <circle cx={center} cy={center} r="24" fill="#070b14" stroke="#2d4a72" strokeWidth="2" />
         <polygon points={polygon} fill="rgba(0, 215, 192, 0.25)" stroke="#00d7c0" strokeWidth="2.5" />
         {polygon.split(' ').map((pair, index) => {
           const [x, y] = pair.split(',').map(Number)
           return <circle key={index} cx={x} cy={y} r="4" fill="#38bdf8" stroke="#f8fbff" strokeWidth="1.5" />
         })}
-        <circle cx={center} cy={center} r="32" fill="#070b14" stroke="#2d4a72" strokeWidth="2" />
         <text x={center} y={center + 9} textAnchor="middle" dominantBaseline="middle" fill="#ffffff" fontSize="26" fontWeight="900" letterSpacing="-1">
           {overallPower}
         </text>
