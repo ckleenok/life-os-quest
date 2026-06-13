@@ -2084,7 +2084,7 @@ export default function App() {
                     </p>
                   </div>
                 ) : (
-                  <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                  <div className="mt-5 grid grid-cols-2 gap-3 xl:grid-cols-3">
                     {dayMissions.map((mission, index) => {
                       const completed = Boolean(
                         state.completed[getMissionKey(state.selectedVersion, state.selectedWeek, selectedDay.id, mission.id)],

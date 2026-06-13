@@ -566,7 +566,11 @@ textarea {
   }
 
   .life-dashboard .mission-card {
-    padding: 10px !important;
+    padding: 8px !important;
+  }
+
+  .life-dashboard .grid.grid-cols-2.gap-3.xl\:grid-cols-3 {
+    gap: 8px !important;
   }
 
   .life-dashboard .mission-icon {
