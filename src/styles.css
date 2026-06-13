@@ -537,4 +537,12 @@ textarea {
   .life-dashboard svg.h-\[22rem\] {
     height: 17rem !important;
   }
+
+  .life-dashboard .min-h-\[22rem\] {
+    min-height: 17rem !important;
+  }
+
+  .life-dashboard .grid.grid-cols-2.gap-3 > div {
+    padding: 10px !important;
+  }
 }

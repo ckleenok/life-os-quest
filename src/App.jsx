@@ -2515,7 +2515,7 @@ function CharacterStatus({ c, lang, statTotals, compact = false }) {
         </div>
       </div>
 
-      <div className={`mt-5 grid gap-3 ${compact ? 'md:grid-cols-5' : 'md:grid-cols-2 xl:grid-cols-5'}`}>
+      <div className={`mt-5 grid grid-cols-2 gap-3 ${compact ? 'md:grid-cols-5' : 'md:grid-cols-2 xl:grid-cols-5'}`}>
         {characterStats.map((stat) => {
           const points = statTotals[stat.id] ?? 0
           return (
@@ -2895,7 +2895,7 @@ function DiaryDashboard({ memos, selectedVersion, selectedWeek, diaryView, lang,
         </div>
       ) : (
         <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="mb-3 grid grid-cols-7 gap-3">
+          <div className="mb-3 hidden grid-cols-7 gap-3 lg:grid">
             {days.map((day) => (
               <div key={day.id} className="px-1 text-sm font-black text-slate-500">
                 {tr(day.label, lang)}
