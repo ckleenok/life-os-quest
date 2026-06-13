@@ -441,6 +441,94 @@ textarea {
     text-align: left !important;
   }
 
+  .life-dashboard .mobile-planner {
+    margin-top: 12px !important;
+    padding: 10px !important;
+  }
+
+  .life-dashboard .mobile-planner > div:first-child {
+    gap: 2px !important;
+  }
+
+  .life-dashboard .mobile-planner p.text-sm {
+    font-size: 0.95rem !important;
+    line-height: 1.1 !important;
+  }
+
+  .life-dashboard .mobile-planner h3 {
+    font-size: 1.05rem !important;
+    line-height: 1.1 !important;
+  }
+
+  .life-dashboard .mobile-planner p.text-xs {
+    font-size: 11px !important;
+    line-height: 1.35 !important;
+  }
+
+  .life-dashboard .mobile-planner-scroll {
+    margin-top: 10px !important;
+  }
+
+  .life-dashboard .mobile-planner-grid {
+    min-width: 29rem !important;
+    gap: 6px !important;
+  }
+
+  .life-dashboard .mobile-planner-day {
+    min-height: 7rem !important;
+    padding: 8px 6px !important;
+    border-radius: 10px !important;
+  }
+
+  .life-dashboard .mobile-planner-day > span:first-child {
+    min-height: 2.2rem !important;
+    gap: 4px !important;
+  }
+
+  .life-dashboard .mobile-planner-day > span:first-child > span:first-child > span:first-child {
+    height: auto !important;
+    font-size: 12px !important;
+    line-height: 1 !important;
+  }
+
+  .life-dashboard .mobile-planner-day > span:first-child > span:first-child > span:last-child {
+    height: auto !important;
+    margin-top: 2px !important;
+    font-size: 10px !important;
+    line-height: 1 !important;
+  }
+
+  .life-dashboard .mobile-planner-day > span:first-child > span:last-child {
+    min-width: 30px !important;
+    height: 18px !important;
+    padding: 0 5px !important;
+    font-size: 9px !important;
+  }
+
+  .life-dashboard .mobile-planner-day .mt-3 {
+    margin-top: 8px !important;
+    gap: 5px !important;
+  }
+
+  .life-dashboard .mobile-planner-empty {
+    padding: 10px 4px !important;
+    font-size: 10px !important;
+    line-height: 1.15 !important;
+    word-break: keep-all;
+  }
+
+  .life-dashboard .mobile-planner-mission {
+    height: 30px !important;
+    padding: 0 6px !important;
+    gap: 4px !important;
+    font-size: 10px !important;
+  }
+
+  .life-dashboard .mobile-planner-mission svg {
+    width: 10px !important;
+    height: 10px !important;
+  }
+
   .life-dashboard textarea {
     min-height: 11rem !important;
     font-size: 16px !important;

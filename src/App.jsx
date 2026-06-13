@@ -452,6 +452,7 @@ const days = [
   {
     id: 'mon',
     label: { en: 'Mon', ko: '월' },
+    shortLabel: { en: 'Mo', ko: '월' },
     title: { en: 'Routine Start', ko: '루틴 시작' },
     personalTime: { en: 'Personal 90 min', ko: '개인 90분' },
     parentTime: { en: 'Family 30 min', ko: '가족 30분' },
@@ -459,6 +460,7 @@ const days = [
   {
     id: 'tue',
     label: { en: 'Tue', ko: '화' },
+    shortLabel: { en: 'Tu', ko: '화' },
     title: { en: 'Focus Training', ko: '집중 훈련' },
     personalTime: { en: 'Personal 90-120 min', ko: '개인 90-120분' },
     parentTime: { en: 'Family 30 min', ko: '가족 30분' },
@@ -466,6 +468,7 @@ const days = [
   {
     id: 'wed',
     label: { en: 'Wed', ko: '수' },
+    shortLabel: { en: 'We', ko: '수' },
     title: { en: 'Midweek Check', ko: '중간 점검' },
     personalTime: { en: 'Personal 90 min', ko: '개인 90분' },
     parentTime: { en: 'Family 45 min', ko: '가족 45분' },
@@ -473,6 +476,7 @@ const days = [
   {
     id: 'thu',
     label: { en: 'Thu', ko: '목' },
+    shortLabel: { en: 'Th', ko: '목' },
     title: { en: 'Execution Boost', ko: '실행 강화' },
     personalTime: { en: 'Personal 90-120 min', ko: '개인 90-120분' },
     parentTime: { en: 'Family 30 min', ko: '가족 30분' },
@@ -480,6 +484,7 @@ const days = [
   {
     id: 'fri',
     label: { en: 'Fri', ko: '금' },
+    shortLabel: { en: 'Fr', ko: '금' },
     title: { en: 'Light Closeout', ko: '가볍게 마감' },
     personalTime: { en: 'Personal 75-90 min', ko: '개인 75-90분' },
     parentTime: { en: 'Family 30 min', ko: '가족 30분' },
@@ -487,6 +492,7 @@ const days = [
   {
     id: 'sat',
     label: { en: 'Sat', ko: '\uD1A0' },
+    shortLabel: { en: 'Sa', ko: '\uD1A0' },
     title: { en: 'Flexible Day', ko: '\uC790\uC728 \uACC4\uD68D' },
     personalTime: { en: 'Flexible personal missions', ko: '\uAC1C\uC778 \uBBF8\uC158 \uC790\uC728' },
     parentTime: { en: 'Flexible family time', ko: '\uAC00\uC871 \uC2DC\uAC04 \uC790\uC728' },
@@ -494,6 +500,7 @@ const days = [
   {
     id: 'sun',
     label: { en: 'Sun', ko: '일' },
+    shortLabel: { en: 'Su', ko: '일' },
     title: { en: 'Review and Reset', ko: '회고와 리셋' },
     personalTime: { en: 'Personal 60-90 min', ko: '개인 60-90분' },
     parentTime: { en: 'Family 60 min', ko: '가족 60분' },
@@ -2313,7 +2320,7 @@ function WeekPlannerCalendar({
   }
 
   return (
-    <div className="mt-5 rounded-lg border border-slate-200 bg-slate-50 p-4">
+    <div className="mobile-planner mt-5 rounded-lg border border-slate-200 bg-slate-50 p-4">
       <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-sm font-black text-emerald-600">{c.weekPlanner ?? copy.en.weekPlanner}</p>
@@ -2322,8 +2329,8 @@ function WeekPlannerCalendar({
         <p className="text-xs font-bold leading-5 text-slate-500">{c.dragHint ?? copy.en.dragHint}</p>
       </div>
 
-      <div className="-mx-1 mt-4 overflow-x-auto px-1">
-        <div className="grid min-w-[46rem] grid-cols-7 gap-1.5 md:gap-2 lg:gap-3 xl:min-w-0">
+      <div className="mobile-planner-scroll -mx-1 mt-4 overflow-x-auto px-1">
+        <div className="mobile-planner-grid grid min-w-[46rem] grid-cols-7 gap-1.5 md:gap-2 lg:gap-3 xl:min-w-0">
           {days.map((day) => {
             const dayMissionIds = schedule[day.id] ?? []
             const selected = selectedDayId === day.id
@@ -2345,7 +2352,7 @@ function WeekPlannerCalendar({
                   if (!day.rest) event.preventDefault()
                 }}
                 onDrop={(event) => handleDrop(event, day.id)}
-                className={`flex min-h-32 flex-col rounded-lg border p-2 text-left transition md:min-h-40 lg:min-h-44 lg:p-2.5 ${
+                className={`mobile-planner-day flex min-h-32 flex-col rounded-lg border p-2 text-left transition md:min-h-40 lg:min-h-44 lg:p-2.5 ${
                   selected
                     ? day.rest
                       ? 'border-slate-900 bg-slate-900 text-white'
@@ -2357,7 +2364,7 @@ function WeekPlannerCalendar({
               >
                 <span className="flex min-h-9 items-start justify-between gap-2">
                   <span className="min-w-0">
-                    <span className="block h-5 truncate text-sm font-black leading-5 text-slate-950">{tr(day.label, lang)}</span>
+                    <span className="block h-5 truncate text-sm font-black leading-5 text-slate-950">{tr(day.shortLabel ?? day.label, lang)}</span>
                     <span className="block h-4 text-[11px] font-bold leading-4 text-slate-400">{dayDate}</span>
                   </span>
                   <span className="grid h-5 min-w-9 shrink-0 place-items-center rounded-full bg-slate-100 px-2 text-[11px] font-black leading-none text-slate-500">
@@ -2367,11 +2374,11 @@ function WeekPlannerCalendar({
 
                 <span className="mt-3 grid flex-1 content-start gap-1.5">
                   {day.rest ? (
-                    <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-3 text-center text-xs font-black text-slate-500">
+                    <span className="mobile-planner-empty rounded-md border border-slate-200 bg-slate-50 px-2 py-3 text-center text-xs font-black text-slate-500">
                       {c.fullRest}
                     </span>
                   ) : dayMissionIds.length === 0 ? (
-                    <span className="rounded-md border border-dashed border-slate-200 px-2 py-3 text-center text-xs font-black text-slate-400">
+                    <span className="mobile-planner-empty rounded-md border border-dashed border-slate-200 px-2 py-3 text-center text-xs font-black text-slate-400">
                       {c.dropHere ?? copy.en.dropHere}
                     </span>
                   ) : (
@@ -2390,7 +2397,7 @@ function WeekPlannerCalendar({
                               JSON.stringify({ missionId, sourceDayId: day.id }),
                             )
                           }}
-                          className={`flex h-8 min-w-0 items-center justify-between gap-1.5 rounded-md border px-2 text-[11px] font-semibold active:cursor-grabbing sm:text-xs ${
+                          className={`mobile-planner-mission flex h-8 min-w-0 items-center justify-between gap-1.5 rounded-md border px-2 text-[11px] font-semibold active:cursor-grabbing sm:text-xs ${
                             fixed ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'
                           } ${
                             complete ? 'border-emerald-400 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-slate-50 text-slate-600'
