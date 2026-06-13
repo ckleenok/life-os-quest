@@ -1082,6 +1082,17 @@ function getNextDayRef(version, week, dayId) {
   return { version: nextWeek.version, week: nextWeek.week, dayId: 'mon' }
 }
 
+function getPrevDayRef(version, week, dayId) {
+  const dayIndex = days.findIndex((day) => day.id === dayId)
+  if (dayIndex > 0) {
+    return { version, week, dayId: days[dayIndex - 1].id }
+  }
+
+  const prevWeek = getPrevVersionWeek(version, week)
+  if (!prevWeek) return { version, week, dayId }
+  return { version: prevWeek.version, week: prevWeek.week, dayId: days[days.length - 1].id }
+}
+
 function formatLongDate(date, lang) {
   return new Intl.DateTimeFormat(lang === 'ko' ? 'en-GB' : 'en-GB', {
     day: 'numeric',
@@ -1955,6 +1966,30 @@ export default function App() {
                       </button>
                     </div>
                     <p className="theme-copy mt-2 text-sm leading-6 text-slate-600">{tr(version.theme, lang)}</p>
+
+                    <div className="mobile-day-nav mt-3 flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const prev = getPrevDayRef(state.selectedVersion, state.selectedWeek, state.selectedDay)
+                          updateState({ selectedVersion: prev.version, selectedWeek: prev.week, selectedDay: prev.dayId })
+                        }}
+                        className="grid h-7 w-7 shrink-0 place-items-center rounded-md border border-slate-200 text-slate-500 hover:border-slate-400"
+                        aria-label={lang === 'ko' ? '이전 날' : 'Previous day'}
+                      >‹</button>
+                      <p className="min-w-0 flex-1 truncate text-center text-xs font-black text-slate-500">
+                        {tr(selectedDay.label, lang)} · {formatDate(getDayDate(state.selectedVersion, state.selectedWeek, selectedDay.id))}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const next = getNextDayRef(state.selectedVersion, state.selectedWeek, state.selectedDay)
+                          updateState({ selectedVersion: next.version, selectedWeek: next.week, selectedDay: next.dayId })
+                        }}
+                        className="grid h-7 w-7 shrink-0 place-items-center rounded-md border border-slate-200 text-slate-500 hover:border-slate-400"
+                        aria-label={lang === 'ko' ? '다음 날' : 'Next day'}
+                      >›</button>
+                    </div>
                   </div>
                   <button
                     type="button"
