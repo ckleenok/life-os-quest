@@ -2603,6 +2603,7 @@ function StatRadar({ lang, c, statTotals, maxStatTotals, overallPower }) {
   return (
     <div className="mx-auto w-full max-w-[26rem] rounded-lg border border-slate-200 bg-slate-50 p-3">
       <p className="mb-1 text-center text-[11px] font-black uppercase tracking-widest text-slate-400">전체 누적 스탯</p>
+      <p className="mb-2 text-center text-lg font-black text-white">{tr({ en: 'Overall', ko: '종합' }, lang)} : {overallPower}</p>
       <svg viewBox={`0 0 ${size} ${size}`} className="mx-auto w-full" role="img" aria-label={c.characterStatus} style={{ fontFamily: "'Inter', 'Pretendard', system-ui, -apple-system, sans-serif" }}>
         {[0.25, 0.5, 0.75, 1].map((scale) => (
           <polygon
@@ -2636,15 +2637,11 @@ function StatRadar({ lang, c, statTotals, maxStatTotals, overallPower }) {
             </g>
           )
         })}
-        <circle cx={center} cy={center} r="24" fill="#070b14" stroke="#2d4a72" strokeWidth="2" />
         <polygon points={polygon} fill="rgba(0, 215, 192, 0.25)" stroke="#00d7c0" strokeWidth="2.5" />
         {polygon.split(' ').map((pair, index) => {
           const [x, y] = pair.split(',').map(Number)
           return <circle key={index} cx={x} cy={y} r="4" fill="#38bdf8" stroke="#f8fbff" strokeWidth="1.5" />
         })}
-        <text x={center} y={center + 9} textAnchor="middle" dominantBaseline="middle" fill="#ffffff" fontSize="26" fontWeight="900" letterSpacing="-1">
-          {overallPower}
-        </text>
       </svg>
     </div>
   )
