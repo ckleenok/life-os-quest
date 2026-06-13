@@ -2320,7 +2320,7 @@ function WeekPlannerCalendar({
   }
 
   return (
-    <div className="mobile-planner mt-5 rounded-lg border border-slate-200 bg-slate-50 p-4">
+    <div className="mobile-planner mt-5 hidden rounded-lg border border-slate-200 bg-slate-50 p-4 sm:block">
       <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-sm font-black text-emerald-600">{c.weekPlanner ?? copy.en.weekPlanner}</p>
@@ -2421,7 +2421,7 @@ function WeekPlannerCalendar({
 
 function ActivityPool({ c, lang, requiredCounts, scheduledCounts, onQuickAdd, canLoadPrevious, onLoadPreviousWeek, onResetPlan }) {
   return (
-    <aside className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+    <aside className="hidden rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:block">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-sm font-black text-slate-500">{c.activityPool ?? copy.en.activityPool}</p>
