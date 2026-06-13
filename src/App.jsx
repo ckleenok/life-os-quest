@@ -1903,6 +1903,7 @@ export default function App() {
               />
             )}
 
+        {!state.showToc && (
         <section className="grid gap-4">
           <section className="space-y-4">
             <div className="grid gap-4 xl:grid-cols-[minmax(0,0.56fr)_minmax(0,1fr)]">
@@ -2123,6 +2124,7 @@ export default function App() {
             </div>
           </section>
         </section>
+        )}
           </>
         ) : state.activeTab === 'diary' ? (
           <DiaryDashboard
