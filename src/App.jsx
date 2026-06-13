@@ -1321,6 +1321,9 @@ export default function App() {
   const lang = state.lang ?? 'en'
   const c = copy[lang]
   const currentUser = users.find((user) => user.id === currentUserId) ?? users[0]
+  const compactStats = lang === 'ko'
+    ? { week: '주', day: '하루', xp: 'XP' }
+    : { week: 'Week', day: 'Day', xp: 'XP' }
 
   const syncCalendar = useCallback(async (token, usersData, currentLang) => {
     if (!token || !usersData) return
@@ -1680,7 +1683,48 @@ export default function App() {
   return (
     <main className="life-dashboard min-h-screen bg-[#f7f8fb] text-slate-900">
       <section className="mx-auto flex w-full max-w-[96rem] flex-col gap-4 px-3 pb-28 pt-3 sm:gap-6 sm:px-6 sm:py-5 lg:px-8 2xl:max-w-[104rem]">
-        <header className="grid gap-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm md:grid-cols-[1.15fr_0.75fr_0.95fr] md:items-center">
+        <div className="mobile-home-card rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:hidden">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[11px] font-black uppercase tracking-[0.14em] text-emerald-600">Life Game</p>
+              <h1 className="mt-0.5 truncate text-lg font-black text-slate-950">{currentUser.name}</h1>
+            </div>
+
+            <div className="flex shrink-0 items-center gap-1.5">
+              <label className="flex h-8 items-center gap-1 rounded-md border border-slate-200 bg-slate-50 px-2">
+                <UserRound size={13} className="text-emerald-600" />
+                <select
+                  value={currentUserId}
+                  onChange={(event) => switchUser(event.target.value)}
+                  className="w-14 bg-transparent text-xs font-black text-slate-950 outline-none"
+                  aria-label={c.activeMember ?? copy.en.activeMember}
+                >
+                  {users.map((user) => (
+                    <option key={user.id} value={user.id}>
+                      {user.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div className="grid grid-cols-2 rounded-md border border-slate-200 bg-slate-50 p-0.5">
+                {['ko', 'en'].map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => updateState({ lang: option })}
+                    className={`h-7 rounded px-2 text-[11px] font-black transition ${
+                      lang === option ? 'bg-emerald-500 text-slate-950' : 'text-slate-400'
+                    }`}
+                  >
+                    {option.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <header className="desktop-hero hidden gap-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:grid md:grid-cols-[1.15fr_0.75fr_0.95fr] md:items-center">
           <div>
             <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-sm font-semibold text-emerald-700">
               <Sparkles size={16} />
@@ -1765,10 +1809,10 @@ export default function App() {
 
         <nav className="hidden gap-2 rounded-lg border border-slate-200 bg-white p-2 shadow-sm sm:flex sm:w-fit">
           <TabButton
-            active={state.activeTab === 'quest'}
+            active={state.activeTab === 'quest' && !state.showToc}
             icon={Compass}
             label={c.quest}
-            onClick={() => updateState({ activeTab: 'quest' })}
+            onClick={() => updateState({ activeTab: 'quest', showToc: false })}
           />
           <TabButton
             active={state.activeTab === 'progress'}
@@ -1794,10 +1838,10 @@ export default function App() {
           <div className="mx-auto grid max-w-md grid-cols-4 gap-1">
             <TabButton
               variant="bottom"
-              active={state.activeTab === 'quest'}
+              active={state.activeTab === 'quest' && !state.showToc}
               icon={Compass}
               label={c.quest}
-              onClick={() => updateState({ activeTab: 'quest' })}
+              onClick={() => updateState({ activeTab: 'quest', showToc: false })}
             />
             <TabButton
               variant="bottom"
@@ -1823,12 +1867,14 @@ export default function App() {
           </div>
         </nav>
 
-        <CharacterStatus
-          c={c}
-          lang={lang}
-          statTotals={statTotals}
-          compact
-        />
+        <div className="hidden sm:block">
+          <CharacterStatus
+            c={c}
+            lang={lang}
+            statTotals={statTotals}
+            compact
+          />
+        </div>
 
         {state.activeTab === 'quest' ? (
           <>
@@ -1853,10 +1899,10 @@ export default function App() {
         <section className="grid gap-4">
           <section className="space-y-4">
             <div className="grid gap-4 xl:grid-cols-[minmax(0,0.56fr)_minmax(0,1fr)]">
-              <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <div className="flex items-center gap-2">
+              <div className="mobile-week-panel rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0 flex-1">
+                    <div className="mobile-week-nav flex items-center gap-2">
                       <button
                         type="button"
                         onClick={() => {
@@ -1866,7 +1912,7 @@ export default function App() {
                         disabled={!getPrevVersionWeek(state.selectedVersion, state.selectedWeek)}
                         className="grid h-7 w-7 place-items-center rounded-md border border-slate-200 text-slate-500 hover:border-slate-400 disabled:opacity-30"
                       >‹</button>
-                      <p className="text-sm font-black text-emerald-600">
+                      <p className="min-w-0 truncate text-sm font-black text-emerald-600">
                         {version.label} · Week {state.selectedWeek} ·{' '}
                         {formatDateRange(getWeekStartDate(state.selectedVersion, state.selectedWeek), addDays(getWeekStartDate(state.selectedVersion, state.selectedWeek), 6))}
                       </p>
@@ -1888,13 +1934,24 @@ export default function App() {
                         className="ml-1 inline-flex h-7 items-center rounded-md border border-emerald-300 bg-emerald-50 px-2 text-xs font-black text-emerald-700 hover:bg-emerald-100"
                       >오늘</button>
                     </div>
-                    <h2 className="mt-1 text-2xl font-black text-slate-950">{tr(version.weeks[state.selectedWeek - 1], lang)}</h2>
-                    <p className="mt-2 text-sm leading-6 text-slate-600">{tr(version.theme, lang)}</p>
+                    <div className="mt-2 flex items-center justify-between gap-2">
+                      <h2 className="min-w-0 flex-1 text-2xl font-black text-slate-950">{tr(version.weeks[state.selectedWeek - 1], lang)}</h2>
+                      <button
+                        type="button"
+                        onClick={resetCurrentWeek}
+                        className="mobile-inline-reset hidden h-7 w-7 shrink-0 items-center justify-center rounded-md border border-slate-200 text-slate-600"
+                        title={c.resetTitle}
+                        aria-label={c.resetTitle}
+                      >
+                        <RotateCcw size={14} />
+                      </button>
+                    </div>
+                    <p className="theme-copy mt-2 text-sm leading-6 text-slate-600">{tr(version.theme, lang)}</p>
                   </div>
                   <button
                     type="button"
                     onClick={resetCurrentWeek}
-                    className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 text-sm font-bold text-slate-600 hover:border-slate-400"
+                    className="desktop-reset-button inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 text-sm font-bold text-slate-600 hover:border-slate-400"
                     title={c.resetTitle}
                   >
                     <RotateCcw size={16} />
@@ -1902,7 +1959,24 @@ export default function App() {
                   </button>
                 </div>
 
-                <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                <div className="mobile-stat-strip mt-3 flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 sm:hidden">
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[10px] font-black uppercase tracking-wide text-slate-500">{compactStats.week}</span>
+                    <span className="mt-0.5 block text-sm font-black text-slate-950">{weekCompleted}/{weeklyMissionCount}</span>
+                  </span>
+                  <span className="h-8 w-px bg-slate-200" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[10px] font-black uppercase tracking-wide text-slate-500">{compactStats.day}</span>
+                    <span className="mt-0.5 block text-sm font-black text-slate-950">{selectedDay.rest ? c.rest : `${dayCompleted}/${dayMissions.length}`}</span>
+                  </span>
+                  <span className="h-8 w-px bg-slate-200" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[10px] font-black uppercase tracking-wide text-slate-500">{compactStats.xp}</span>
+                    <span className="mt-0.5 block text-sm font-black text-slate-950">{totalXp}</span>
+                  </span>
+                </div>
+
+                <div className="mt-5 hidden gap-3 sm:grid sm:grid-cols-3">
                   <Stat label={c.weekComplete} value={`${weekCompleted}/${weeklyMissionCount}`} />
                   <Stat label={c.selectedDay} value={selectedDay.rest ? c.rest : `${dayCompleted}/${dayMissions.length}`} />
                   <Stat label={c.totalXp} value={`${totalXp}`} />
@@ -2111,9 +2185,9 @@ export default function App() {
 
 function Stat({ label, value }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-      <p className="text-sm font-semibold text-slate-500">{label}</p>
-      <p className="mt-1 text-2xl font-black text-slate-950">{value}</p>
+    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 sm:p-4">
+      <p className="text-xs font-semibold text-slate-500 sm:text-sm">{label}</p>
+      <p className="mt-1 text-xl font-black text-slate-950 sm:text-2xl">{value}</p>
     </div>
   )
 }
@@ -2136,7 +2210,7 @@ function FamilyScheduleVisibility({ allUsersData, selectedVersion, selectedWeek,
   })
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="mobile-family-board rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
       <p className="text-sm font-black text-emerald-600">{lang === 'ko' ? '가족 일정 가시성' : 'Family Visibility'}</p>
       <h3 className="mt-1 text-xl font-black text-slate-950">
         {lang === 'ko' ? '오늘과 내일 활동 보드' : 'Today and Tomorrow Board'}
@@ -2144,7 +2218,7 @@ function FamilyScheduleVisibility({ allUsersData, selectedVersion, selectedWeek,
 
       <div className="mt-4 grid gap-3 xl:grid-cols-2">
         {sections.map((section) => (
-          <div key={section.key} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+          <div key={section.key} className="family-day-card rounded-lg border border-slate-200 bg-slate-50 p-3">
             <div className="border-b border-sky-200 pb-2 text-center">
               <h4 className="mt-0.5 text-[1.7rem] font-black text-slate-950">
                 {formatLongDate(getDayDate(section.ref.version, section.ref.week, section.ref.dayId), lang)}
@@ -2156,7 +2230,7 @@ function FamilyScheduleVisibility({ allUsersData, selectedVersion, selectedWeek,
                 section.activities.map(({ missionId, names }) => (
                   <div
                     key={`${section.key}-${missionId}`}
-                    className="grid min-h-[52px] items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 md:grid-cols-[92px_minmax(0,1fr)]"
+                    className="family-activity-row grid min-h-[52px] items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 md:grid-cols-[92px_minmax(0,1fr)]"
                   >
                     <p className="text-[15px] font-black text-slate-900">{tr(missionMap[missionId]?.ko, lang)}</p>
                     <div className="flex min-h-[24px] flex-wrap content-center gap-1.5 text-slate-800">
@@ -2174,7 +2248,7 @@ function FamilyScheduleVisibility({ allUsersData, selectedVersion, selectedWeek,
                   </div>
                 ))
               ) : (
-                <div className="rounded-md border border-dashed border-slate-200 bg-white px-3 py-6 text-center text-sm font-bold text-slate-400">
+                <div className="empty-activity rounded-md border border-dashed border-slate-200 bg-white px-3 py-6 text-center text-sm font-bold text-slate-400">
                   {lang === 'ko' ? '잡힌 활동 없음' : 'No activities planned'}
                 </div>
               )}

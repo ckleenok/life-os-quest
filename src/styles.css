@@ -225,40 +225,65 @@ textarea {
 
   body {
     background: #070b14;
+    overflow-x: hidden;
     overscroll-behavior-y: none;
   }
 
   .life-dashboard {
     min-height: 100svh;
+    overflow-x: hidden;
     background:
       linear-gradient(180deg, rgba(56, 189, 248, 0.08), transparent 16rem),
       #070b14;
   }
 
-  .life-dashboard header {
+  .life-dashboard > section,
+  .life-dashboard > section > * {
+    min-width: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .life-dashboard .grid,
+  .life-dashboard .space-y-4 {
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .life-dashboard .mobile-home-card {
+    padding: 10px 12px !important;
+    border-color: rgba(36, 53, 82, 0.95) !important;
+    background: rgba(16, 24, 39, 0.96) !important;
+  }
+
+  .life-dashboard .mobile-home-card::before {
+    display: none !important;
+  }
+
+  .life-dashboard .desktop-hero {
     grid-template-columns: 1fr !important;
     gap: 12px !important;
     padding: 14px !important;
   }
 
-  .life-dashboard header h1 {
+  .life-dashboard .desktop-hero h1 {
     font-size: 1.65rem !important;
     line-height: 1.05 !important;
   }
 
-  .life-dashboard header > div:first-child > div:first-of-type {
+  .life-dashboard .desktop-hero > div:first-child > div:first-of-type {
     margin-bottom: 10px !important;
   }
 
-  .life-dashboard header > div:first-child > div:nth-of-type(2) {
+  .life-dashboard .desktop-hero > div:first-child > div:nth-of-type(2) {
     display: none !important;
   }
 
-  .life-dashboard header > div:nth-child(2) {
+  .life-dashboard .desktop-hero > div:nth-child(2) {
     display: none !important;
   }
 
-  .life-dashboard header > div:nth-child(3) {
+  .life-dashboard .desktop-hero > div:nth-child(3) {
     padding: 12px !important;
   }
 
@@ -274,7 +299,146 @@ textarea {
   .life-dashboard section > .rounded-lg,
   .life-dashboard aside.rounded-lg,
   .life-dashboard header.rounded-lg {
-    padding: 14px !important;
+    padding: 10px 12px !important;
+  }
+
+  .life-dashboard .mobile-home-card .rounded-lg {
+    padding: 10px !important;
+  }
+
+  .life-dashboard .mobile-week-panel {
+    padding: 10px 12px !important;
+    overflow: hidden !important;
+  }
+
+  .life-dashboard .mobile-week-panel > div:first-child {
+    gap: 6px !important;
+  }
+
+  .life-dashboard .mobile-week-panel .mobile-week-nav {
+    display: grid !important;
+    grid-template-columns: 28px minmax(0, 1fr) 28px auto;
+    gap: 6px !important;
+    align-items: center;
+  }
+
+  .life-dashboard .mobile-week-panel .mobile-week-nav button {
+    margin-left: 0 !important;
+    height: 28px !important;
+    min-width: 0 !important;
+  }
+
+  .life-dashboard .mobile-week-panel .mobile-week-nav p {
+    font-size: 12px !important;
+    line-height: 1.1 !important;
+  }
+
+  .life-dashboard .mobile-week-panel h2 {
+    margin-top: 0 !important;
+    font-size: 1.1rem !important;
+    line-height: 1.15 !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .life-dashboard .mobile-week-panel .theme-copy {
+    display: none !important;
+  }
+
+  .life-dashboard .mobile-week-panel .desktop-reset-button {
+    display: none !important;
+  }
+
+  .life-dashboard .mobile-week-panel .mobile-inline-reset {
+    display: inline-flex !important;
+  }
+
+  .life-dashboard .mobile-week-panel .mobile-stat-strip {
+    margin-top: 8px !important;
+    gap: 6px !important;
+    width: 100% !important;
+    padding: 7px 10px !important;
+  }
+
+  .life-dashboard .mobile-week-panel .mobile-stat-strip span {
+    text-align: center;
+  }
+
+  .life-dashboard .mobile-home-card .grid.grid-cols-3 > div {
+    min-width: 0;
+    padding: 8px !important;
+  }
+
+  .life-dashboard .mobile-home-card .grid.grid-cols-3 p:first-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 9px !important;
+    line-height: 1.1 !important;
+  }
+
+  .life-dashboard .mobile-home-card .grid.grid-cols-3 p:last-child {
+    margin-top: 3px !important;
+    font-size: 1rem !important;
+    line-height: 1 !important;
+  }
+
+  .life-dashboard .mobile-family-board {
+    padding: 10px 12px !important;
+  }
+
+  .life-dashboard .mobile-family-board h3 {
+    margin-top: 2px !important;
+    font-size: 1.05rem !important;
+    line-height: 1.2 !important;
+  }
+
+  .life-dashboard .mobile-family-board > .mt-4 {
+    margin-top: 10px !important;
+    gap: 8px !important;
+  }
+
+  .life-dashboard .family-day-card {
+    padding: 10px !important;
+  }
+
+  .life-dashboard .family-day-card > div:first-child {
+    padding-bottom: 5px !important;
+    text-align: left !important;
+  }
+
+  .life-dashboard .family-day-card h4 {
+    font-size: 1rem !important;
+    line-height: 1.15 !important;
+  }
+
+  .life-dashboard .family-day-card .mt-4 {
+    margin-top: 7px !important;
+    gap: 6px !important;
+  }
+
+  .life-dashboard .family-activity-row {
+    min-height: 36px !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    padding: 7px 9px !important;
+  }
+
+  .life-dashboard .family-activity-row p {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 13px !important;
+  }
+
+  .life-dashboard .family-activity-row > div {
+    justify-content: flex-end;
+    min-height: 0 !important;
+  }
+
+  .life-dashboard .empty-activity {
+    padding: 10px !important;
+    text-align: left !important;
   }
 
   .life-dashboard textarea {
