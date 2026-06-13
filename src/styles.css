@@ -545,4 +545,69 @@ textarea {
   .life-dashboard .grid.grid-cols-2.gap-3 > div {
     padding: 10px !important;
   }
+
+  .life-dashboard .mission-day-plan {
+    display: none !important;
+  }
+
+  .life-dashboard .mobile-day-nav {
+    margin-top: 6px !important;
+    gap: 4px !important;
+  }
+
+  .life-dashboard .mobile-day-nav button {
+    height: 22px !important;
+    width: 22px !important;
+    font-size: 11px !important;
+  }
+
+  .life-dashboard .mobile-day-nav p {
+    font-size: 11px !important;
+  }
+
+  .life-dashboard .mission-card {
+    padding: 10px !important;
+  }
+
+  .life-dashboard .mission-icon {
+    height: 2rem !important;
+    width: 2rem !important;
+  }
+
+  .life-dashboard .mission-icon svg {
+    width: 16px !important;
+    height: 16px !important;
+  }
+
+  .life-dashboard .mission-check {
+    width: 18px !important;
+    height: 18px !important;
+  }
+
+  .life-dashboard .mission-title {
+    margin-top: 8px !important;
+    font-size: 0.95rem !important;
+    line-height: 1.2 !important;
+  }
+
+  .life-dashboard .mission-subtitle,
+  .life-dashboard .mission-detail {
+    display: none !important;
+  }
+
+  .life-dashboard .mission-xp {
+    margin-top: 8px !important;
+    padding: 2px 8px !important;
+    font-size: 11px !important;
+  }
+
+  .life-dashboard .mission-stats {
+    margin-top: 6px !important;
+    gap: 4px !important;
+  }
+
+  .life-dashboard .mission-stats span {
+    padding: 2px 8px !important;
+    font-size: 10px !important;
+  }
 }
