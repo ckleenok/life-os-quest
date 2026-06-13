@@ -3011,20 +3011,20 @@ function ProgressDashboard({
 
       {/* User selector tabs */}
       {allUsersData && (
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-4 gap-1.5 sm:flex sm:flex-wrap sm:gap-2">
           {allUsersData.map(({ user }) => (
             <button
               key={user.id}
               type="button"
               onClick={() => onSelectProgressUser(user.id)}
-              className={`inline-flex h-9 items-center gap-2 rounded-lg px-4 text-sm font-black transition ${
+              className={`inline-flex h-9 min-w-0 items-center justify-center gap-1.5 rounded-lg px-2 text-xs font-black transition sm:px-4 sm:text-sm ${
                 progressUserId === user.id
                   ? 'bg-slate-950 text-white shadow-sm'
                   : 'border border-slate-200 bg-white text-slate-500 hover:bg-slate-100'
               }`}
             >
-              <span className="grid h-5 w-5 place-items-center rounded-full bg-emerald-500 text-[10px] text-white">{user.name[0]}</span>
-              {user.name}
+              <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-emerald-500 text-[10px] text-white">{user.name[0]}</span>
+              <span className="truncate">{user.name}</span>
             </button>
           ))}
         </div>
