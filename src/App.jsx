@@ -1679,7 +1679,7 @@ export default function App() {
 
   return (
     <main className="life-dashboard min-h-screen bg-[#f7f8fb] text-slate-900">
-      <section className="mx-auto flex w-full max-w-[96rem] flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8 2xl:max-w-[104rem]">
+      <section className="mx-auto flex w-full max-w-[96rem] flex-col gap-4 px-3 pb-28 pt-3 sm:gap-6 sm:px-6 sm:py-5 lg:px-8 2xl:max-w-[104rem]">
         <header className="grid gap-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm md:grid-cols-[1.15fr_0.75fr_0.95fr] md:items-center">
           <div>
             <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-sm font-semibold text-emerald-700">
@@ -1763,7 +1763,7 @@ export default function App() {
           </div>
         </header>
 
-        <nav className="grid grid-cols-4 gap-2 rounded-lg border border-slate-200 bg-white p-2 shadow-sm sm:flex sm:w-fit">
+        <nav className="hidden gap-2 rounded-lg border border-slate-200 bg-white p-2 shadow-sm sm:flex sm:w-fit">
           <TabButton
             active={state.activeTab === 'quest'}
             icon={Compass}
@@ -1777,7 +1777,7 @@ export default function App() {
             onClick={() => updateState({ activeTab: 'progress' })}
           />
           <TabButton
-            active={state.showToc}
+            active={state.activeTab === 'quest' && state.showToc}
             icon={ListTree}
             label={c.roadmap}
             onClick={() => updateState({ showToc: !state.showToc, activeTab: 'quest' })}
@@ -1788,6 +1788,39 @@ export default function App() {
             label={c.diary ?? copy.en.diary}
             onClick={() => updateState({ activeTab: 'diary' })}
           />
+        </nav>
+
+        <nav className="mobile-bottom-tabs fixed inset-x-0 bottom-0 z-50 border-t border-slate-200 bg-white/95 px-3 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] pt-2 shadow-[0_-16px_34px_rgba(0,0,0,0.24)] backdrop-blur-xl sm:hidden">
+          <div className="mx-auto grid max-w-md grid-cols-4 gap-1">
+            <TabButton
+              variant="bottom"
+              active={state.activeTab === 'quest'}
+              icon={Compass}
+              label={c.quest}
+              onClick={() => updateState({ activeTab: 'quest' })}
+            />
+            <TabButton
+              variant="bottom"
+              active={state.activeTab === 'progress'}
+              icon={Gauge}
+              label={c.progress}
+              onClick={() => updateState({ activeTab: 'progress' })}
+            />
+            <TabButton
+              variant="bottom"
+              active={state.activeTab === 'quest' && state.showToc}
+              icon={ListTree}
+              label={c.roadmap}
+              onClick={() => updateState({ showToc: !state.showToc, activeTab: 'quest' })}
+            />
+            <TabButton
+              variant="bottom"
+              active={state.activeTab === 'diary'}
+              icon={NotebookPen}
+              label={c.diary ?? copy.en.diary}
+              onClick={() => updateState({ activeTab: 'diary' })}
+            />
+          </div>
         </nav>
 
         <CharacterStatus
@@ -2153,7 +2186,22 @@ function FamilyScheduleVisibility({ allUsersData, selectedVersion, selectedWeek,
   )
 }
 
-function TabButton({ active, icon: Icon, label, onClick }) {
+function TabButton({ active, icon: Icon, label, onClick, variant = 'default' }) {
+  if (variant === 'bottom') {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className={`flex h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-1 text-[11px] font-black transition ${
+          active ? 'bg-emerald-500 text-slate-950' : 'text-slate-400 active:bg-slate-100'
+        }`}
+      >
+        <Icon size={18} strokeWidth={2.4} />
+        <span className="max-w-full truncate leading-none">{label}</span>
+      </button>
+    )
+  }
+
   return (
     <button
       type="button"

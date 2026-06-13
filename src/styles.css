@@ -217,3 +217,72 @@ textarea {
 .life-dashboard .bg-emerald-500 {
   background: linear-gradient(90deg, #00d7c0, #38bdf8) !important;
 }
+
+@media (max-width: 639px) {
+  html {
+    background: #070b14;
+  }
+
+  body {
+    background: #070b14;
+    overscroll-behavior-y: none;
+  }
+
+  .life-dashboard {
+    min-height: 100svh;
+    background:
+      linear-gradient(180deg, rgba(56, 189, 248, 0.08), transparent 16rem),
+      #070b14;
+  }
+
+  .life-dashboard header {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+    padding: 14px !important;
+  }
+
+  .life-dashboard header h1 {
+    font-size: 1.65rem !important;
+    line-height: 1.05 !important;
+  }
+
+  .life-dashboard header > div:first-child > div:first-of-type {
+    margin-bottom: 10px !important;
+  }
+
+  .life-dashboard header > div:first-child > div:nth-of-type(2) {
+    display: none !important;
+  }
+
+  .life-dashboard header > div:nth-child(2) {
+    display: none !important;
+  }
+
+  .life-dashboard header > div:nth-child(3) {
+    padding: 12px !important;
+  }
+
+  .life-dashboard .mobile-bottom-tabs {
+    border-color: rgba(36, 53, 82, 0.9) !important;
+    background: rgba(8, 17, 31, 0.92) !important;
+  }
+
+  .life-dashboard .mobile-bottom-tabs::before {
+    display: none !important;
+  }
+
+  .life-dashboard section > .rounded-lg,
+  .life-dashboard aside.rounded-lg,
+  .life-dashboard header.rounded-lg {
+    padding: 14px !important;
+  }
+
+  .life-dashboard textarea {
+    min-height: 11rem !important;
+    font-size: 16px !important;
+  }
+
+  .life-dashboard svg.h-\[22rem\] {
+    height: 17rem !important;
+  }
+}
