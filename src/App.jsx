@@ -1702,7 +1702,7 @@ export default function App() {
 
   return (
     <main className="life-dashboard min-h-screen bg-[#f7f8fb] text-slate-900">
-      <section className="mx-auto flex w-full max-w-[96rem] flex-col gap-2 px-3 pb-24 pt-2 sm:gap-6 sm:px-6 sm:py-5 lg:pb-5 lg:px-8 2xl:max-w-[104rem]">
+      <section className="mx-auto flex w-full max-w-[96rem] flex-col gap-2 px-3 pb-20 pt-2 sm:gap-6 sm:px-6 sm:py-5 lg:pb-5 lg:px-8 2xl:max-w-[104rem]">
         <div className="mobile-home-card rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm lg:hidden">
           {/* Row 1: name + controls */}
           <div className="flex items-center justify-between gap-2">
@@ -2115,9 +2115,11 @@ export default function App() {
                 </div>
               </div>
               <textarea
+                rows={2}
                 value={state.memos[memoKey] ?? ''}
                 onChange={(event) => setMemo(event.target.value)}
-                className="mt-1 h-6 w-full resize-none rounded border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] leading-4 text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-emerald-400 focus:bg-white focus:ring-2 focus:ring-emerald-100"
+                style={{ height: '44px' }}
+                className="mt-1 w-full resize-none rounded border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] leading-4 text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-emerald-400 focus:bg-white focus:ring-2 focus:ring-emerald-100"
                 placeholder={memoPlaceholder}
               />
             </div>
