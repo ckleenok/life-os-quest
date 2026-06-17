@@ -1701,8 +1701,8 @@ export default function App() {
   }
 
   return (
-    <main className={`life-dashboard flex flex-col bg-[#f7f8fb] text-slate-900 ${state.activeTab === 'quest' ? 'h-screen overflow-hidden' : 'min-h-screen'}`}>
-      <section className="mx-auto flex w-full max-w-[96rem] flex-1 flex-col gap-2 px-3 pb-20 pt-2 sm:gap-6 sm:px-6 sm:py-5 lg:pb-5 lg:px-8 2xl:max-w-[104rem]">
+    <main className="life-dashboard min-h-screen bg-[#f7f8fb] text-slate-900">
+      <section className="mx-auto flex w-full max-w-[96rem] flex-col gap-2 px-3 pb-20 pt-2 sm:gap-6 sm:px-6 sm:py-5 lg:pb-5 lg:px-8 2xl:max-w-[104rem]">
         <div className="mobile-home-card rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm lg:hidden">
           {/* Row 1: name + controls */}
           <div className="flex items-center justify-between gap-2">
@@ -1943,8 +1943,8 @@ export default function App() {
             )}
 
         {!state.showToc && (
-        <section className="flex flex-1 flex-col gap-2">
-          <section className="flex flex-1 flex-col gap-2">
+        <section className="grid gap-2">
+          <section className="space-y-2">
             <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm">
                 {/* Week nav */}
                 <div className="flex items-center gap-1.5">
@@ -2104,7 +2104,7 @@ export default function App() {
               />
             </div>
 
-            <div className="flex flex-1 flex-col rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm">
+            <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm">
               <div className="flex items-center gap-1.5">
                 <div className="grid h-6 w-6 shrink-0 place-items-center rounded bg-indigo-50 text-indigo-700">
                   <NotebookPen size={13} />
@@ -2117,7 +2117,8 @@ export default function App() {
               <textarea
                 value={state.memos[memoKey] ?? ''}
                 onChange={(event) => setMemo(event.target.value)}
-                className="mt-2 flex-1 w-full resize-none rounded-md border border-slate-200 bg-slate-50 px-2 py-2 text-xs leading-5 text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-emerald-400 focus:bg-white focus:ring-2 focus:ring-emerald-100"
+                style={{ height: '72px' }}
+                className="mt-1.5 w-full resize-none rounded-md border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs leading-5 text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-emerald-400 focus:bg-white focus:ring-2 focus:ring-emerald-100"
                 placeholder={memoPlaceholder}
               />
             </div>
