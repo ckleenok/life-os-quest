@@ -2104,20 +2104,20 @@ export default function App() {
               />
             </div>
 
-            <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center gap-3">
-                <div className="grid h-10 w-10 place-items-center rounded-lg bg-indigo-50 text-indigo-700">
-                  <NotebookPen size={21} />
+            <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm">
+              <div className="flex items-center gap-2">
+                <div className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-indigo-50 text-indigo-700">
+                  <NotebookPen size={15} />
                 </div>
-                <div>
-                  <h2 className="text-lg font-black text-slate-950">{memoTitle}</h2>
-                  <p className="text-sm text-slate-500">{memoHint}</p>
+                <div className="min-w-0">
+                  <h2 className="text-sm font-black text-slate-950">{memoTitle}</h2>
+                  <p className="text-[10px] text-slate-500">{memoHint}</p>
                 </div>
               </div>
               <textarea
                 value={state.memos[memoKey] ?? ''}
                 onChange={(event) => setMemo(event.target.value)}
-                className="mt-4 min-h-36 w-full resize-y rounded-lg border border-slate-200 bg-slate-50 p-4 text-base leading-7 text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-emerald-400 focus:bg-white focus:ring-4 focus:ring-emerald-100"
+                className="mt-2 min-h-16 w-full resize-none rounded-md border border-slate-200 bg-slate-50 p-2 text-sm leading-5 text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-emerald-400 focus:bg-white focus:ring-2 focus:ring-emerald-100"
                 placeholder={memoPlaceholder}
               />
             </div>
