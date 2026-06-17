@@ -1945,132 +1945,89 @@ export default function App() {
         {!state.showToc && (
         <section className="grid gap-4">
           <section className="space-y-4">
-            <div className="grid gap-4 xl:grid-cols-[minmax(0,0.56fr)_minmax(0,1fr)]">
-              <div className="mobile-week-panel rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="min-w-0 flex-1">
-                    <div className="mobile-week-nav flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const prev = getPrevVersionWeek(state.selectedVersion, state.selectedWeek)
-                          if (prev) updateState({ selectedVersion: prev.version, selectedWeek: prev.week, selectedDay: 'mon' })
-                        }}
-                        disabled={!getPrevVersionWeek(state.selectedVersion, state.selectedWeek)}
-                        className="grid h-7 w-7 place-items-center rounded-md border border-slate-200 text-slate-500 hover:border-slate-400 disabled:opacity-30"
-                      >‹</button>
-                      <p className="min-w-0 truncate text-sm font-black text-emerald-600">
-                        {version.label} · Week {state.selectedWeek} ·{' '}
-                        {formatDateRange(getWeekStartDate(state.selectedVersion, state.selectedWeek), addDays(getWeekStartDate(state.selectedVersion, state.selectedWeek), 6))}
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const next = getNextVersionWeek(state.selectedVersion, state.selectedWeek)
-                          if (next) updateState({ selectedVersion: next.version, selectedWeek: next.week, selectedDay: 'mon' })
-                        }}
-                        disabled={!getNextVersionWeek(state.selectedVersion, state.selectedWeek)}
-                        className="grid h-7 w-7 place-items-center rounded-md border border-slate-200 text-slate-500 hover:border-slate-400 disabled:opacity-30"
-                      >›</button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const { version: v, week: w, dayId } = getTodayVersionWeekDay()
-                          updateState({ selectedVersion: v, selectedWeek: w, selectedDay: dayId })
-                        }}
-                        className="ml-1 inline-flex h-7 items-center rounded-md border border-emerald-300 bg-emerald-50 px-2 text-xs font-black text-emerald-700 hover:bg-emerald-100"
-                      >오늘</button>
-                    </div>
-                    <div className="mt-2 flex items-center justify-between gap-2">
-                      <h2 className="min-w-0 flex-1 text-2xl font-black text-slate-950">{tr(version.weeks[state.selectedWeek - 1], lang)}</h2>
-                      <button
-                        type="button"
-                        onClick={resetCurrentWeek}
-                        className="mobile-inline-reset hidden h-7 w-7 shrink-0 items-center justify-center rounded-md border border-slate-200 text-slate-600"
-                        title={c.resetTitle}
-                        aria-label={c.resetTitle}
-                      >
-                        <RotateCcw size={14} />
-                      </button>
-                    </div>
-                    <p className="theme-copy mt-2 text-sm leading-6 text-slate-600">{tr(version.theme, lang)}</p>
-
-                    <div className="mobile-day-nav mt-3 flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const prev = getPrevDayRef(state.selectedVersion, state.selectedWeek, state.selectedDay)
-                          updateState({ selectedVersion: prev.version, selectedWeek: prev.week, selectedDay: prev.dayId })
-                        }}
-                        className="grid h-7 w-7 shrink-0 place-items-center rounded-md border border-slate-200 text-slate-500 hover:border-slate-400"
-                        aria-label={lang === 'ko' ? '이전 날' : 'Previous day'}
-                      >‹</button>
-                      <p className="min-w-0 flex-1 truncate text-center text-xs font-black text-slate-500">
-                        {tr(selectedDay.label, lang)} · {formatDate(getDayDate(state.selectedVersion, state.selectedWeek, selectedDay.id))}
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const next = getNextDayRef(state.selectedVersion, state.selectedWeek, state.selectedDay)
-                          updateState({ selectedVersion: next.version, selectedWeek: next.week, selectedDay: next.dayId })
-                        }}
-                        className="grid h-7 w-7 shrink-0 place-items-center rounded-md border border-slate-200 text-slate-500 hover:border-slate-400"
-                        aria-label={lang === 'ko' ? '다음 날' : 'Next day'}
-                      >›</button>
-                    </div>
-                  </div>
+            <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+                {/* Week nav */}
+                <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={resetCurrentWeek}
-                    className="desktop-reset-button inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 text-sm font-bold text-slate-600 hover:border-slate-400"
-                    title={c.resetTitle}
-                  >
-                    <RotateCcw size={16} />
-                    {c.reset}
-                  </button>
+                    onClick={() => {
+                      const prev = getPrevVersionWeek(state.selectedVersion, state.selectedWeek)
+                      if (prev) updateState({ selectedVersion: prev.version, selectedWeek: prev.week, selectedDay: 'mon' })
+                    }}
+                    disabled={!getPrevVersionWeek(state.selectedVersion, state.selectedWeek)}
+                    className="grid h-7 w-7 shrink-0 place-items-center rounded-md border border-slate-200 text-slate-500 hover:border-slate-400 disabled:opacity-30"
+                  >‹</button>
+                  <p className="min-w-0 flex-1 truncate text-sm font-black text-emerald-600">
+                    {version.label} · Week {state.selectedWeek} ·{' '}
+                    {formatDateRange(getWeekStartDate(state.selectedVersion, state.selectedWeek), addDays(getWeekStartDate(state.selectedVersion, state.selectedWeek), 6))}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = getNextVersionWeek(state.selectedVersion, state.selectedWeek)
+                      if (next) updateState({ selectedVersion: next.version, selectedWeek: next.week, selectedDay: 'mon' })
+                    }}
+                    disabled={!getNextVersionWeek(state.selectedVersion, state.selectedWeek)}
+                    className="grid h-7 w-7 shrink-0 place-items-center rounded-md border border-slate-200 text-slate-500 hover:border-slate-400 disabled:opacity-30"
+                  >›</button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const { version: v, week: w, dayId } = getTodayVersionWeekDay()
+                      updateState({ selectedVersion: v, selectedWeek: w, selectedDay: dayId })
+                    }}
+                    className="inline-flex h-7 shrink-0 items-center rounded-md border border-emerald-300 bg-emerald-50 px-2 text-xs font-black text-emerald-700 hover:bg-emerald-100"
+                  >오늘</button>
                 </div>
 
-<div className="mt-5 hidden gap-3 sm:grid sm:grid-cols-3">
+                {/* Week title */}
+                <h2 className="mt-2 text-xl font-black text-slate-950">{tr(version.weeks[state.selectedWeek - 1], lang)}</h2>
+                <p className="theme-copy mt-1 hidden text-sm leading-5 text-slate-500 sm:block">{tr(version.theme, lang)}</p>
+
+                {/* Day nav */}
+                <div className="mt-3 flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const prev = getPrevDayRef(state.selectedVersion, state.selectedWeek, state.selectedDay)
+                      updateState({ selectedVersion: prev.version, selectedWeek: prev.week, selectedDay: prev.dayId })
+                    }}
+                    className="grid h-7 w-7 shrink-0 place-items-center rounded-md border border-slate-200 text-slate-500 hover:border-slate-400"
+                    aria-label={lang === 'ko' ? '이전 날' : 'Previous day'}
+                  >‹</button>
+                  <p className="min-w-0 flex-1 truncate text-center text-xs font-black text-slate-500">
+                    {tr(selectedDay.label, lang)} · {formatDate(getDayDate(state.selectedVersion, state.selectedWeek, selectedDay.id))}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = getNextDayRef(state.selectedVersion, state.selectedWeek, state.selectedDay)
+                      updateState({ selectedVersion: next.version, selectedWeek: next.week, selectedDay: next.dayId })
+                    }}
+                    className="grid h-7 w-7 shrink-0 place-items-center rounded-md border border-slate-200 text-slate-500 hover:border-slate-400"
+                    aria-label={lang === 'ko' ? '다음 날' : 'Next day'}
+                  >›</button>
+                </div>
+
+                {/* Desktop stats */}
+                <div className="mt-4 hidden gap-3 sm:grid sm:grid-cols-3">
                   <Stat label={c.weekComplete} value={`${weekCompleted}/${weeklyMissionCount}`} />
                   <Stat label={c.selectedDay} value={selectedDay.rest ? c.rest : `${dayCompleted}/${dayMissions.length}`} />
                   <Stat label={c.totalXp} value={`${totalXp}`} />
                 </div>
-              </div>
 
-              <div className="hidden lg:block">
-                <FamilyScheduleVisibility
-                  allUsersData={allUsersData}
-                  selectedVersion={state.selectedVersion}
-                  selectedWeek={state.selectedWeek}
-                  selectedDayId={selectedDay.id}
-                  lang={lang}
-                  calendarNode={clientId ? (gToken ? (
-                    <div className="flex items-center gap-2 text-xs text-slate-400">
-                      <CalendarDays size={13} className={calSyncing ? 'animate-pulse text-blue-400' : calSynced ? 'text-emerald-400' : 'text-slate-500'} />
-                      <span>{calSyncing ? '동기화 중...' : calSynced ? '동기화 완료' : '연결됨'}</span>
-                      {calSynced && <button type="button" onClick={() => { hasSyncedRef.current = false; syncCalendar(gToken, allUsersData, lang) }} className="font-black hover:text-white">재동기화</button>}
-                    </div>
-                  ) : (
-                    <button type="button" onClick={connectGoogleCalendar} className="flex items-center gap-1 text-xs font-black text-slate-400 hover:text-blue-400">
-                      <CalendarDays size={13} />연결
-                    </button>
-                  )) : null}
-                />
-              </div>
-            </div>
+                {/* Divider */}
+                <div className="my-4 border-t border-slate-100" />
 
-            <div className="grid gap-4 lg:grid-cols-[1fr_280px] xl:grid-cols-[1fr_320px]">
-              <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-sm font-black text-slate-500">
-                      {tr(selectedDay.label, lang)} · {formatDate(getDayDate(state.selectedVersion, state.selectedWeek, selectedDay.id))} · {tr(selectedDay.title, lang)}
-                    </p>
-                    <h2 className="mt-1 text-2xl font-black text-slate-950">
-                      {selectedDay.rest ? c.todayRest : c.todayMissions}
-                    </h2>
-                    <p className="mission-day-plan mt-2 max-w-2xl text-sm leading-6 text-slate-500">{tr(selectedDayPlan, lang)}</p>
-                  </div>
+                {/* Day + mission header */}
+                <div>
+                  <p className="text-sm font-black text-slate-500">
+                    {tr(selectedDay.label, lang)} · {formatDate(getDayDate(state.selectedVersion, state.selectedWeek, selectedDay.id))} · {tr(selectedDay.title, lang)}
+                  </p>
+                  <h2 className="mt-1 text-2xl font-black text-slate-950">
+                    {selectedDay.rest ? c.todayRest : c.todayMissions}
+                  </h2>
+                  <p className="mission-day-plan mt-1 hidden max-w-2xl text-sm leading-6 text-slate-500 sm:block">{tr(selectedDayPlan, lang)}</p>
                 </div>
 
                 <WeekPlannerCalendar
@@ -2139,7 +2096,6 @@ export default function App() {
                     })}
                   </div>
                 )}
-              </div>
 
               <ActivityPool
                 c={c}
