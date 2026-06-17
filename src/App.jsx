@@ -1759,6 +1759,7 @@ export default function App() {
           </div>
         </div>
 
+        {state.activeTab === 'quest' && (
         <div className="lg:hidden">
           <FamilyScheduleVisibility
             allUsersData={allUsersData}
@@ -1769,6 +1770,7 @@ export default function App() {
             calendarNode={null}
           />
         </div>
+        )}
 
         <header className="desktop-hero hidden gap-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:grid md:grid-cols-[1.15fr_0.75fr_0.95fr] md:items-center">
           <div>
