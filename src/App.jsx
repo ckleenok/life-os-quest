@@ -1706,11 +1706,11 @@ export default function App() {
         <div className="mobile-home-card rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm lg:hidden">
           {/* Row 1: name + controls */}
           <div className="flex items-center justify-between gap-2">
-            <div className="min-w-0">
-              <p className="text-[10px] font-black uppercase tracking-[0.14em] text-emerald-600">Life Game</p>
-              <h1 className="truncate text-base font-black text-slate-950">{currentUser.name}</h1>
-            </div>
-            <div className="flex shrink-0 items-center gap-1">
+            <div className="flex min-w-0 items-center gap-1.5">
+              <div className="min-w-0">
+                <p className="text-[10px] font-black uppercase tracking-[0.14em] text-emerald-600">Life Game</p>
+                <h1 className="truncate text-base font-black text-slate-950">{currentUser.name}</h1>
+              </div>
               <label className="flex h-7 items-center gap-1 rounded-md border border-slate-200 bg-slate-50 px-1.5">
                 <UserRound size={12} className="text-emerald-600" />
                 <select
@@ -1724,20 +1724,20 @@ export default function App() {
                   ))}
                 </select>
               </label>
-              <div className="grid grid-cols-2 rounded-md border border-slate-200 bg-slate-50 p-0.5">
-                {['ko', 'en'].map((option) => (
-                  <button
-                    key={option}
-                    type="button"
-                    onClick={() => updateState({ lang: option })}
-                    className={`h-6 rounded px-2 text-[10px] font-black transition ${
-                      lang === option ? 'bg-emerald-500 text-slate-950' : 'text-slate-400'
-                    }`}
-                  >
-                    {option.toUpperCase()}
-                  </button>
-                ))}
-              </div>
+            </div>
+            <div className="grid shrink-0 grid-cols-2 rounded-md border border-slate-200 bg-slate-50 p-0.5">
+              {['ko', 'en'].map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => updateState({ lang: option })}
+                  className={`h-6 rounded px-2 text-[10px] font-black transition ${
+                    lang === option ? 'bg-emerald-500 text-slate-950' : 'text-slate-400'
+                  }`}
+                >
+                  {option.toUpperCase()}
+                </button>
+              ))}
             </div>
           </div>
           {/* Row 2: achievement stats */}
