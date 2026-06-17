@@ -76,7 +76,7 @@ const copy = {
     memoPlaceholder: 'Example: I completed workouts 3 times this week. Next week I will lock reading time at 9 PM.',
     dailyDiary: 'Daily Diary',
     dailyDiaryHint: 'Write a short note about today: what you did, how you felt, and one thing to remember.',
-    dailyDiaryPlaceholder: 'Example: I read for 30 minutes and felt focused. Tomorrow I will start earlier.',
+    dailyDiaryPlaceholder: 'Today in one line...',
     toc: 'Table of Content',
     tocTitle: 'Build your life first, then build things',
     hide: 'Hide',
@@ -140,7 +140,7 @@ const copy = {
     memoPlaceholder: '예: 이번 주는 운동을 3번 완료했다. 다음 주에는 독서 시간을 저녁 9시로 고정한다.',
     dailyDiary: '간단한 일기',
     dailyDiaryHint: '오늘 한 일, 기분, 기억할 점 하나를 짧게 적어보세요.',
-    dailyDiaryPlaceholder: '예: 오늘은 30분 독서를 했다. 내일은 조금 더 일찍 시작해보자.',
+    dailyDiaryPlaceholder: '오늘 한 줄로...',
     toc: 'Table of Content',
     tocTitle: '먼저 생활을 세우고, 그 다음 만들어낸다',
     hide: '감추기',
@@ -2118,8 +2118,8 @@ export default function App() {
                 rows={1}
                 value={state.memos[memoKey] ?? ''}
                 onChange={(event) => setMemo(event.target.value)}
-                style={{ height: '28px' }}
-                className="mt-1 w-full resize-none rounded border border-slate-200 bg-slate-50 px-2 py-1 text-[9px] leading-4 text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-emerald-400 focus:bg-white focus:ring-2 focus:ring-emerald-100"
+                style={{ height: '28px', maxHeight: '28px', overflow: 'hidden' }}
+                className="mt-1 w-full resize-none overflow-hidden rounded border border-slate-200 bg-slate-50 px-2 py-1 text-[9px] leading-4 text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-emerald-400 focus:bg-white focus:ring-2 focus:ring-emerald-100"
                 placeholder={memoPlaceholder}
               />
             </div>
