@@ -2104,24 +2104,20 @@ export default function App() {
               />
             </div>
 
-            <div className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 shadow-sm">
-              <div className="flex items-center gap-1.5">
-                <div className="grid h-6 w-6 shrink-0 place-items-center rounded bg-indigo-50 text-indigo-700">
-                  <NotebookPen size={13} />
+            <div className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 shadow-sm">
+              <div className="flex items-center gap-2">
+                <div className="grid h-5 w-5 shrink-0 place-items-center rounded bg-indigo-50 text-indigo-700">
+                  <NotebookPen size={11} />
                 </div>
-                <div className="min-w-0">
-                  <h2 className="text-sm font-black text-slate-950">{memoTitle}</h2>
-                  <p className="text-[9px] text-slate-500">{memoHint}</p>
-                </div>
+                <span className="shrink-0 text-[10px] font-black text-slate-950">{memoTitle}</span>
+                <input
+                  type="text"
+                  value={state.memos[memoKey] ?? ''}
+                  onChange={(event) => setMemo(event.target.value)}
+                  className="min-w-0 flex-1 rounded border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-emerald-400 focus:bg-white focus:ring-2 focus:ring-emerald-100"
+                  placeholder={memoPlaceholder}
+                />
               </div>
-              <textarea
-                rows={1}
-                value={state.memos[memoKey] ?? ''}
-                onChange={(event) => setMemo(event.target.value)}
-                style={{ height: '28px', maxHeight: '28px', overflow: 'hidden' }}
-                className="mt-1 w-full resize-none overflow-hidden rounded border border-slate-200 bg-slate-50 px-2 py-1 text-[9px] leading-4 text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-emerald-400 focus:bg-white focus:ring-2 focus:ring-emerald-100"
-                placeholder={memoPlaceholder}
-              />
             </div>
           </section>
         </section>
