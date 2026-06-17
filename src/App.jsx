@@ -1945,7 +1945,7 @@ export default function App() {
         {!state.showToc && (
         <section className="grid gap-4">
           <section className="space-y-4">
-            <div className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
+            <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm">
                 {/* Week nav */}
                 <div className="flex items-center gap-1.5">
                   <button
@@ -1981,11 +1981,11 @@ export default function App() {
                 </div>
 
                 {/* Week title */}
-                <h2 className="mt-1 text-base font-black text-slate-950">{tr(version.weeks[state.selectedWeek - 1], lang)}</h2>
-                <p className="theme-copy mt-0.5 hidden text-xs leading-4 text-slate-500 sm:block">{tr(version.theme, lang)}</p>
+                <h2 className="mt-0.5 text-sm font-black text-slate-950">{tr(version.weeks[state.selectedWeek - 1], lang)}</h2>
+                <p className="theme-copy hidden text-xs leading-4 text-slate-500 sm:block">{tr(version.theme, lang)}</p>
 
                 {/* Day nav */}
-                <div className="mt-2 flex items-center gap-1.5">
+                <div className="mt-1.5 flex items-center gap-1.5">
                   <button
                     type="button"
                     onClick={() => {
@@ -2017,14 +2017,14 @@ export default function App() {
                 </div>
 
                 {/* Divider */}
-                <div className="my-2.5 border-t border-slate-100" />
+                <div className="my-1.5 border-t border-slate-100" />
 
                 {/* Mission header */}
                 <div>
-                  <h2 className="text-lg font-black text-slate-950">
+                  <h2 className="text-sm font-black text-slate-950">
                     {selectedDay.rest ? c.todayRest : c.todayMissions}
                   </h2>
-                  <p className="mission-day-plan mt-0.5 hidden max-w-2xl text-xs leading-5 text-slate-500 sm:block">{tr(selectedDayPlan, lang)}</p>
+                  <p className="mission-day-plan hidden max-w-2xl text-xs leading-4 text-slate-500 sm:block">{tr(selectedDayPlan, lang)}</p>
                 </div>
 
                 <WeekPlannerCalendar
@@ -2051,7 +2051,7 @@ export default function App() {
                     </p>
                   </div>
                 ) : (
-                  <div className="mt-3 grid grid-cols-4 gap-2">
+                  <div className="mt-1.5 grid grid-cols-4 gap-1.5">
                     {dayMissions.map((mission, index) => {
                       const completed = Boolean(
                         state.completed[getMissionKey(state.selectedVersion, state.selectedWeek, selectedDay.id, mission.id)],
