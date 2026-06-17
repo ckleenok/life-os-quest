@@ -1703,26 +1703,24 @@ export default function App() {
   return (
     <main className="life-dashboard min-h-screen bg-[#f7f8fb] text-slate-900">
       <section className="mx-auto flex w-full max-w-[96rem] flex-col gap-4 px-3 pb-28 pt-3 sm:gap-6 sm:px-6 sm:py-5 lg:pb-5 lg:px-8 2xl:max-w-[104rem]">
-        <div className="mobile-home-card rounded-lg border border-slate-200 bg-white p-4 shadow-sm lg:hidden">
-          <div className="flex items-center justify-between gap-3">
+        <div className="mobile-home-card rounded-lg border border-slate-200 bg-white px-3 py-2.5 shadow-sm lg:hidden">
+          {/* Row 1: name + controls */}
+          <div className="flex items-center justify-between gap-2">
             <div className="min-w-0">
-              <p className="text-[11px] font-black uppercase tracking-[0.14em] text-emerald-600">Life Game</p>
-              <h1 className="mt-0.5 truncate text-lg font-black text-slate-950">{currentUser.name}</h1>
+              <p className="text-[10px] font-black uppercase tracking-[0.14em] text-emerald-600">Life Game</p>
+              <h1 className="truncate text-base font-black text-slate-950">{currentUser.name}</h1>
             </div>
-
-            <div className="flex shrink-0 items-center gap-1.5">
-              <label className="flex h-8 items-center gap-1 rounded-md border border-slate-200 bg-slate-50 px-2">
-                <UserRound size={13} className="text-emerald-600" />
+            <div className="flex shrink-0 items-center gap-1">
+              <label className="flex h-7 items-center gap-1 rounded-md border border-slate-200 bg-slate-50 px-1.5">
+                <UserRound size={12} className="text-emerald-600" />
                 <select
                   value={currentUserId}
                   onChange={(event) => switchUser(event.target.value)}
-                  className="w-14 bg-transparent text-xs font-black text-slate-950 outline-none"
+                  className="w-12 bg-transparent text-xs font-black text-slate-950 outline-none"
                   aria-label={c.activeMember ?? copy.en.activeMember}
                 >
                   {users.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.name}
-                    </option>
+                    <option key={user.id} value={user.id}>{user.name}</option>
                   ))}
                 </select>
               </label>
@@ -1732,7 +1730,7 @@ export default function App() {
                     key={option}
                     type="button"
                     onClick={() => updateState({ lang: option })}
-                    className={`h-7 rounded px-2 text-[11px] font-black transition ${
+                    className={`h-6 rounded px-2 text-[10px] font-black transition ${
                       lang === option ? 'bg-emerald-500 text-slate-950' : 'text-slate-400'
                     }`}
                   >
@@ -1741,6 +1739,23 @@ export default function App() {
                 ))}
               </div>
             </div>
+          </div>
+          {/* Row 2: achievement stats */}
+          <div className="mt-2 flex items-center rounded-md border border-slate-100 bg-slate-50 px-2 py-1.5">
+            <span className="min-w-0 flex-1 text-center">
+              <span className="block text-[9px] font-black uppercase tracking-wide text-slate-400">{compactStats.week}</span>
+              <span className="block text-sm font-black text-slate-900">{weekCompleted}/{weeklyMissionCount}</span>
+            </span>
+            <span className="h-6 w-px bg-slate-200" />
+            <span className="min-w-0 flex-1 text-center">
+              <span className="block text-[9px] font-black uppercase tracking-wide text-slate-400">{compactStats.day}</span>
+              <span className="block text-sm font-black text-slate-900">{selectedDay.rest ? c.rest : `${dayCompleted}/${dayMissions.length}`}</span>
+            </span>
+            <span className="h-6 w-px bg-slate-200" />
+            <span className="min-w-0 flex-1 text-center">
+              <span className="block text-[9px] font-black uppercase tracking-wide text-slate-400">{compactStats.xp}</span>
+              <span className="block text-sm font-black text-slate-900">{totalXp}</span>
+            </span>
           </div>
         </div>
 
@@ -2015,24 +2030,7 @@ export default function App() {
                   </button>
                 </div>
 
-                <div className="mobile-stat-strip mt-3 flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 lg:hidden">
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-[10px] font-black uppercase tracking-wide text-slate-500">{compactStats.week}</span>
-                    <span className="mt-0.5 block text-sm font-black text-slate-950">{weekCompleted}/{weeklyMissionCount}</span>
-                  </span>
-                  <span className="h-8 w-px bg-slate-200" />
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-[10px] font-black uppercase tracking-wide text-slate-500">{compactStats.day}</span>
-                    <span className="mt-0.5 block text-sm font-black text-slate-950">{selectedDay.rest ? c.rest : `${dayCompleted}/${dayMissions.length}`}</span>
-                  </span>
-                  <span className="h-8 w-px bg-slate-200" />
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-[10px] font-black uppercase tracking-wide text-slate-500">{compactStats.xp}</span>
-                    <span className="mt-0.5 block text-sm font-black text-slate-950">{totalXp}</span>
-                  </span>
-                </div>
-
-                <div className="mt-5 hidden gap-3 sm:grid sm:grid-cols-3">
+<div className="mt-5 hidden gap-3 sm:grid sm:grid-cols-3">
                   <Stat label={c.weekComplete} value={`${weekCompleted}/${weeklyMissionCount}`} />
                   <Stat label={c.selectedDay} value={selectedDay.rest ? c.rest : `${dayCompleted}/${dayMissions.length}`} />
                   <Stat label={c.totalXp} value={`${totalXp}`} />
