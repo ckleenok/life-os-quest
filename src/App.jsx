@@ -1945,9 +1945,9 @@ export default function App() {
         {!state.showToc && (
         <section className="grid gap-4">
           <section className="space-y-4">
-            <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
                 {/* Week nav */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   <button
                     type="button"
                     onClick={() => {
@@ -1955,9 +1955,9 @@ export default function App() {
                       if (prev) updateState({ selectedVersion: prev.version, selectedWeek: prev.week, selectedDay: 'mon' })
                     }}
                     disabled={!getPrevVersionWeek(state.selectedVersion, state.selectedWeek)}
-                    className="grid h-7 w-7 shrink-0 place-items-center rounded-md border border-slate-200 text-slate-500 hover:border-slate-400 disabled:opacity-30"
+                    className="grid h-6 w-6 shrink-0 place-items-center rounded border border-slate-200 text-slate-500 hover:border-slate-400 disabled:opacity-30"
                   >‹</button>
-                  <p className="min-w-0 flex-1 truncate text-sm font-black text-emerald-600">
+                  <p className="min-w-0 flex-1 truncate text-xs font-black text-emerald-600">
                     {version.label} · Week {state.selectedWeek} ·{' '}
                     {formatDateRange(getWeekStartDate(state.selectedVersion, state.selectedWeek), addDays(getWeekStartDate(state.selectedVersion, state.selectedWeek), 6))}
                   </p>
@@ -1968,7 +1968,7 @@ export default function App() {
                       if (next) updateState({ selectedVersion: next.version, selectedWeek: next.week, selectedDay: 'mon' })
                     }}
                     disabled={!getNextVersionWeek(state.selectedVersion, state.selectedWeek)}
-                    className="grid h-7 w-7 shrink-0 place-items-center rounded-md border border-slate-200 text-slate-500 hover:border-slate-400 disabled:opacity-30"
+                    className="grid h-6 w-6 shrink-0 place-items-center rounded border border-slate-200 text-slate-500 hover:border-slate-400 disabled:opacity-30"
                   >›</button>
                   <button
                     type="button"
@@ -1976,23 +1976,23 @@ export default function App() {
                       const { version: v, week: w, dayId } = getTodayVersionWeekDay()
                       updateState({ selectedVersion: v, selectedWeek: w, selectedDay: dayId })
                     }}
-                    className="inline-flex h-7 shrink-0 items-center rounded-md border border-emerald-300 bg-emerald-50 px-2 text-xs font-black text-emerald-700 hover:bg-emerald-100"
+                    className="inline-flex h-6 shrink-0 items-center rounded border border-emerald-300 bg-emerald-50 px-1.5 text-[10px] font-black text-emerald-700 hover:bg-emerald-100"
                   >오늘</button>
                 </div>
 
                 {/* Week title */}
-                <h2 className="mt-2 text-xl font-black text-slate-950">{tr(version.weeks[state.selectedWeek - 1], lang)}</h2>
-                <p className="theme-copy mt-1 hidden text-sm leading-5 text-slate-500 sm:block">{tr(version.theme, lang)}</p>
+                <h2 className="mt-1 text-base font-black text-slate-950">{tr(version.weeks[state.selectedWeek - 1], lang)}</h2>
+                <p className="theme-copy mt-0.5 hidden text-xs leading-4 text-slate-500 sm:block">{tr(version.theme, lang)}</p>
 
                 {/* Day nav */}
-                <div className="mt-3 flex items-center gap-2">
+                <div className="mt-2 flex items-center gap-1.5">
                   <button
                     type="button"
                     onClick={() => {
                       const prev = getPrevDayRef(state.selectedVersion, state.selectedWeek, state.selectedDay)
                       updateState({ selectedVersion: prev.version, selectedWeek: prev.week, selectedDay: prev.dayId })
                     }}
-                    className="grid h-7 w-7 shrink-0 place-items-center rounded-md border border-slate-200 text-slate-500 hover:border-slate-400"
+                    className="grid h-6 w-6 shrink-0 place-items-center rounded border border-slate-200 text-slate-500 hover:border-slate-400"
                     aria-label={lang === 'ko' ? '이전 날' : 'Previous day'}
                   >‹</button>
                   <p className="min-w-0 flex-1 truncate text-center text-xs font-black text-slate-500">
@@ -2004,27 +2004,27 @@ export default function App() {
                       const next = getNextDayRef(state.selectedVersion, state.selectedWeek, state.selectedDay)
                       updateState({ selectedVersion: next.version, selectedWeek: next.week, selectedDay: next.dayId })
                     }}
-                    className="grid h-7 w-7 shrink-0 place-items-center rounded-md border border-slate-200 text-slate-500 hover:border-slate-400"
+                    className="grid h-6 w-6 shrink-0 place-items-center rounded border border-slate-200 text-slate-500 hover:border-slate-400"
                     aria-label={lang === 'ko' ? '다음 날' : 'Next day'}
                   >›</button>
                 </div>
 
                 {/* Desktop stats */}
-                <div className="mt-4 hidden gap-3 sm:grid sm:grid-cols-3">
+                <div className="mt-3 hidden gap-3 sm:grid sm:grid-cols-3">
                   <Stat label={c.weekComplete} value={`${weekCompleted}/${weeklyMissionCount}`} />
                   <Stat label={c.selectedDay} value={selectedDay.rest ? c.rest : `${dayCompleted}/${dayMissions.length}`} />
                   <Stat label={c.totalXp} value={`${totalXp}`} />
                 </div>
 
                 {/* Divider */}
-                <div className="my-4 border-t border-slate-100" />
+                <div className="my-2.5 border-t border-slate-100" />
 
-                {/* Day + mission header */}
+                {/* Mission header */}
                 <div>
-                  <h2 className="text-2xl font-black text-slate-950">
+                  <h2 className="text-lg font-black text-slate-950">
                     {selectedDay.rest ? c.todayRest : c.todayMissions}
                   </h2>
-                  <p className="mission-day-plan mt-1 hidden max-w-2xl text-sm leading-6 text-slate-500 sm:block">{tr(selectedDayPlan, lang)}</p>
+                  <p className="mission-day-plan mt-0.5 hidden max-w-2xl text-xs leading-5 text-slate-500 sm:block">{tr(selectedDayPlan, lang)}</p>
                 </div>
 
                 <WeekPlannerCalendar
