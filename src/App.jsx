@@ -1825,7 +1825,7 @@ export default function App() {
           </div>
         </header>
 
-        <nav className="hidden gap-2 rounded-lg border border-slate-200 bg-white p-2 shadow-sm lg:flex lg:w-fit">
+        <nav id="desktop-tab-nav" className="hidden gap-2 rounded-lg border border-slate-200 bg-white p-2 shadow-sm lg:flex lg:w-fit">
           <TabButton
             active={state.activeTab === 'quest' && !state.showToc}
             icon={Compass}
