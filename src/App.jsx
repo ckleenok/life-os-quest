@@ -1324,6 +1324,8 @@ function loadGoogleIdentityScript() {
   })
 }
 
+const isNativeApp = typeof navigator !== 'undefined' && navigator.userAgent.includes('LifeOSNativeApp')
+
 export default function App() {
   const [currentUserId, setCurrentUserId] = useState(loadCurrentUserId)
   const [state, setState] = useState(createDefaultState)
@@ -1825,7 +1827,7 @@ export default function App() {
           </div>
         </header>
 
-        <nav id="desktop-tab-nav" className="hidden gap-2 rounded-lg border border-slate-200 bg-white p-2 shadow-sm lg:flex lg:w-fit">
+        {!isNativeApp && <nav id="desktop-tab-nav" className="hidden gap-2 rounded-lg border border-slate-200 bg-white p-2 shadow-sm lg:flex lg:w-fit">
           <TabButton
             active={state.activeTab === 'quest' && !state.showToc}
             icon={Compass}
@@ -1850,9 +1852,9 @@ export default function App() {
             label={c.diary ?? copy.en.diary}
             onClick={() => updateState({ activeTab: 'diary' })}
           />
-        </nav>
+        </nav>}
 
-        <nav className="mobile-bottom-tabs fixed inset-x-0 bottom-0 z-50 border-t border-slate-200 bg-white/95 px-3 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] pt-2 shadow-[0_-16px_34px_rgba(0,0,0,0.24)] backdrop-blur-xl lg:hidden">
+        <nav className={`mobile-bottom-tabs fixed inset-x-0 bottom-0 z-50 border-t border-slate-200 bg-white/95 px-3 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] pt-2 shadow-[0_-16px_34px_rgba(0,0,0,0.24)] backdrop-blur-xl ${isNativeApp ? '' : 'lg:hidden'}`}>
           <div className="mx-auto grid max-w-md grid-cols-4 gap-1">
             <TabButton
               variant="bottom"
