@@ -2117,7 +2117,7 @@ export default function App() {
               <textarea
                 value={state.memos[memoKey] ?? ''}
                 onChange={(event) => setMemo(event.target.value)}
-                className="mt-2 min-h-16 w-full resize-none rounded-md border border-slate-200 bg-slate-50 p-2 text-sm leading-5 text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-emerald-400 focus:bg-white focus:ring-2 focus:ring-emerald-100"
+                className="mt-1.5 h-10 w-full resize-none rounded-md border border-slate-200 bg-slate-50 p-2 text-xs leading-4 text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-emerald-400 focus:bg-white focus:ring-2 focus:ring-emerald-100"
                 placeholder={memoPlaceholder}
               />
             </div>
