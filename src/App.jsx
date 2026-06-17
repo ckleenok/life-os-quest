@@ -2051,7 +2051,7 @@ export default function App() {
                     </p>
                   </div>
                 ) : (
-                  <div className="mt-5 grid grid-cols-2 gap-3 xl:grid-cols-3">
+                  <div className="mt-3 grid grid-cols-4 gap-2">
                     {dayMissions.map((mission, index) => {
                       const completed = Boolean(
                         state.completed[getMissionKey(state.selectedVersion, state.selectedWeek, selectedDay.id, mission.id)],
@@ -2065,25 +2065,23 @@ export default function App() {
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: index * 0.03 }}
                           onClick={() => toggleMission(mission.id)}
-                          className={`mission-card rounded-lg border bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
+                          className={`mission-card rounded-lg border bg-white p-2 text-left shadow-sm transition active:scale-95 ${
                             completed ? 'border-emerald-300 ring-2 ring-emerald-100' : 'border-slate-200'
                           }`}
                         >
-                          <div className="flex items-start justify-between gap-3">
-                            <div className={`mission-icon grid h-11 w-11 place-items-center rounded-lg border ${mission.tone}`}>
-                              <Icon size={22} />
+                          <div className="flex items-start justify-between gap-1">
+                            <div className={`mission-icon grid h-8 w-8 shrink-0 place-items-center rounded-md border ${mission.tone}`}>
+                              <Icon size={16} />
                             </div>
-                            <CheckCircle2 className={`mission-check ${completed ? 'text-emerald-500' : 'text-slate-300'}`} size={24} />
+                            <CheckCircle2 className={`mission-check shrink-0 ${completed ? 'text-emerald-500' : 'text-slate-300'}`} size={16} />
                           </div>
-                          <p className="mission-title mt-4 text-lg font-black text-slate-950">{tr(mission.ko, lang)}</p>
-                          <p className="mission-subtitle mt-1 text-sm font-semibold text-slate-500">{mission.name}</p>
-                          <p className="mission-detail mt-3 min-h-10 text-sm leading-5 text-slate-500">{tr(mission.detail, lang)}</p>
-                          <div className="mission-xp mt-4 inline-flex rounded-full bg-slate-100 px-3 py-1 text-sm font-black text-slate-700">
+                          <p className="mission-title mt-2 line-clamp-2 text-[11px] font-black leading-tight text-slate-950">{tr(mission.ko, lang)}</p>
+                          <div className="mission-xp mt-1.5 inline-flex rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-black text-slate-700">
                             +{mission.xp} XP
                           </div>
-                          <div className="mission-stats mt-3 flex flex-wrap gap-2">
+                          <div className="mission-stats mt-1 flex flex-wrap gap-1">
                             {Object.entries(mission.statRewards ?? {}).map(([statId, points]) => (
-                              <span key={statId} className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-black text-slate-500">
+                              <span key={statId} className="rounded-full border border-slate-200 bg-slate-50 px-1 py-0.5 text-[9px] font-black text-slate-500">
                                 {tr(statMap[statId]?.label, lang)} +{points}
                               </span>
                             ))}
