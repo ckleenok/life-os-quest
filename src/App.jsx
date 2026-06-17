@@ -2065,23 +2065,23 @@ export default function App() {
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: index * 0.03 }}
                           onClick={() => toggleMission(mission.id)}
-                          className={`mission-card rounded-lg border bg-white p-2 text-left shadow-sm transition active:scale-95 ${
-                            completed ? 'border-emerald-300 ring-2 ring-emerald-100' : 'border-slate-200'
+                          className={`mission-card rounded-md border bg-white p-1.5 text-left shadow-sm transition active:scale-95 ${
+                            completed ? 'border-emerald-300 ring-1 ring-emerald-100' : 'border-slate-200'
                           }`}
                         >
                           <div className="flex items-start justify-between gap-1">
-                            <div className={`mission-icon grid h-8 w-8 shrink-0 place-items-center rounded-md border ${mission.tone}`}>
-                              <Icon size={16} />
+                            <div className={`mission-icon grid h-6 w-6 shrink-0 place-items-center rounded border ${mission.tone}`}>
+                              <Icon size={13} />
                             </div>
-                            <CheckCircle2 className={`mission-check shrink-0 ${completed ? 'text-emerald-500' : 'text-slate-300'}`} size={16} />
+                            <CheckCircle2 className={`mission-check shrink-0 ${completed ? 'text-emerald-500' : 'text-slate-300'}`} size={13} />
                           </div>
-                          <p className="mission-title mt-2 line-clamp-2 text-[11px] font-black leading-tight text-slate-950">{tr(mission.ko, lang)}</p>
-                          <div className="mission-xp mt-1.5 inline-flex rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-black text-slate-700">
+                          <p className="mission-title mt-1.5 line-clamp-2 text-[10px] font-black leading-tight text-slate-950">{tr(mission.ko, lang)}</p>
+                          <div className="mission-xp mt-1 inline-flex rounded-full bg-slate-100 px-1 py-0.5 text-[9px] font-black text-slate-700">
                             +{mission.xp} XP
                           </div>
-                          <div className="mission-stats mt-1 flex flex-wrap gap-1">
+                          <div className="mission-stats mt-0.5 flex flex-wrap gap-0.5">
                             {Object.entries(mission.statRewards ?? {}).map(([statId, points]) => (
-                              <span key={statId} className="rounded-full border border-slate-200 bg-slate-50 px-1 py-0.5 text-[9px] font-black text-slate-500">
+                              <span key={statId} className="rounded-full border border-slate-200 bg-slate-50 px-1 py-0.5 text-[8px] font-black text-slate-500">
                                 {tr(statMap[statId]?.label, lang)} +{points}
                               </span>
                             ))}
