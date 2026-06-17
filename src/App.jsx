@@ -1759,7 +1759,7 @@ export default function App() {
           </div>
         </div>
 
-        {state.activeTab === 'quest' && (
+        {state.activeTab === 'quest' && !state.showToc && (
         <div className="lg:hidden">
           <FamilyScheduleVisibility
             allUsersData={allUsersData}
