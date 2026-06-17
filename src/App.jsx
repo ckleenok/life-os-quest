@@ -2255,48 +2255,47 @@ function FamilyScheduleVisibility({ allUsersData, selectedVersion, selectedWeek,
     return { ...section, day, activities }
   })
 
+  const nameInitial = (name) => name[0]
+
   return (
-    <div className="mobile-family-board rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-      <p className="text-sm font-black text-emerald-600">{lang === 'ko' ? '가족 일정 가시성' : 'Family Visibility'}</p>
-      <h3 className="mt-1 text-xl font-black text-slate-950">
-        {lang === 'ko' ? '오늘과 내일 활동 보드' : 'Today and Tomorrow Board'}
-      </h3>
+    <div className="mobile-family-board rounded-lg border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
+      <p className="text-[11px] font-black uppercase tracking-widest text-emerald-600">
+        {lang === 'ko' ? '가족 일정' : 'Family Schedule'}
+      </p>
 
-      <div className="mt-4 grid gap-3 xl:grid-cols-2">
+      <div className="mt-2 grid grid-cols-2 gap-2">
         {sections.map((section) => (
-          <div key={section.key} className="family-day-card rounded-lg border border-slate-200 bg-slate-50 p-3">
-            <div className="border-b border-sky-200 pb-2 text-center">
-              <h4 className="mt-0.5 text-[1.7rem] font-black text-slate-950">
-                {formatLongDate(getDayDate(section.ref.version, section.ref.week, section.ref.dayId), lang)}
-              </h4>
-            </div>
+          <div key={section.key} className="family-day-card rounded-md border border-slate-200 bg-slate-50 p-2">
+            <p className="mb-1.5 text-[11px] font-black text-slate-500">
+              {formatLongDate(getDayDate(section.ref.version, section.ref.week, section.ref.dayId), lang)}
+            </p>
 
-            <div className="mt-4 grid gap-2.5">
+            <div className="grid gap-1">
               {section.activities.length > 0 ? (
                 section.activities.map(({ missionId, names }) => (
                   <div
                     key={`${section.key}-${missionId}`}
-                    className="family-activity-row grid min-h-[52px] items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 md:grid-cols-[92px_minmax(0,1fr)]"
+                    className="flex items-center justify-between gap-1 rounded border border-slate-200 bg-white px-2 py-1"
                   >
-                    <p className="text-[15px] font-black text-slate-900">{tr(missionMap[missionId]?.ko, lang)}</p>
-                    <div className="flex min-h-[24px] flex-wrap content-center gap-1.5 text-slate-800">
+                    <p className="min-w-0 truncate text-[11px] font-black text-slate-800">{tr(missionMap[missionId]?.ko, lang)}</p>
+                    <div className="flex shrink-0 gap-0.5">
                       {names.map((name) => (
                         <span
                           key={`${section.key}-${missionId}-${name}`}
-                          className={`inline-flex h-5 items-center rounded-full border px-2 text-[10px] font-black leading-none ${
+                          className={`grid h-4 w-4 place-items-center rounded-full border text-[9px] font-black leading-none ${
                             userBadgeStyles[name] ?? 'border-slate-300 bg-slate-100 text-slate-700'
                           }`}
                         >
-                          {name}
+                          {nameInitial(name)}
                         </span>
                       ))}
                     </div>
                   </div>
                 ))
               ) : (
-                <div className="empty-activity rounded-md border border-dashed border-slate-200 bg-white px-3 py-6 text-center text-sm font-bold text-slate-400">
-                  {lang === 'ko' ? '잡힌 활동 없음' : 'No activities planned'}
-                </div>
+                <p className="py-2 text-center text-[10px] font-bold text-slate-400">
+                  {lang === 'ko' ? '없음' : 'None'}
+                </p>
               )}
             </div>
           </div>
