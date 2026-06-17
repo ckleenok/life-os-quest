@@ -1702,8 +1702,8 @@ export default function App() {
 
   return (
     <main className="life-dashboard min-h-screen bg-[#f7f8fb] text-slate-900">
-      <section className="mx-auto flex w-full max-w-[96rem] flex-col gap-4 px-3 pb-28 pt-3 sm:gap-6 sm:px-6 sm:py-5 lg:pb-5 lg:px-8 2xl:max-w-[104rem]">
-        <div className="mobile-home-card rounded-lg border border-slate-200 bg-white px-3 py-2.5 shadow-sm lg:hidden">
+      <section className="mx-auto flex w-full max-w-[96rem] flex-col gap-2 px-3 pb-24 pt-2 sm:gap-6 sm:px-6 sm:py-5 lg:pb-5 lg:px-8 2xl:max-w-[104rem]">
+        <div className="mobile-home-card rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm lg:hidden">
           {/* Row 1: name + controls */}
           <div className="flex items-center justify-between gap-2">
             <div className="min-w-0">
@@ -1943,8 +1943,8 @@ export default function App() {
             )}
 
         {!state.showToc && (
-        <section className="grid gap-4">
-          <section className="space-y-4">
+        <section className="grid gap-2">
+          <section className="space-y-2">
             <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm">
                 {/* Week nav */}
                 <div className="flex items-center gap-1.5">
@@ -2220,7 +2220,7 @@ function FamilyScheduleVisibility({ allUsersData, selectedVersion, selectedWeek,
   const nameInitial = (name) => name[0]
 
   return (
-    <div className="mobile-family-board rounded-lg border border-slate-200 bg-white px-3 py-2.5 shadow-sm">
+    <div className="mobile-family-board rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm">
       <p className="text-[11px] font-black uppercase tracking-widest text-emerald-600">
         {lang === 'ko' ? '가족 일정' : 'Family Schedule'}
       </p>
