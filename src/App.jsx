@@ -1700,8 +1700,8 @@ export default function App() {
 
   return (
     <main className="life-dashboard min-h-screen bg-[#f7f8fb] text-slate-900">
-      <section className="mx-auto flex w-full max-w-[96rem] flex-col gap-4 px-3 pb-28 pt-3 sm:gap-6 sm:px-6 sm:py-5 lg:px-8 2xl:max-w-[104rem]">
-        <div className="mobile-home-card rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:hidden">
+      <section className="mx-auto flex w-full max-w-[96rem] flex-col gap-4 px-3 pb-28 pt-3 sm:gap-6 sm:px-6 sm:py-5 lg:pb-5 lg:px-8 2xl:max-w-[104rem]">
+        <div className="mobile-home-card rounded-lg border border-slate-200 bg-white p-4 shadow-sm lg:hidden">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
               <p className="text-[11px] font-black uppercase tracking-[0.14em] text-emerald-600">Life Game</p>
@@ -1825,7 +1825,7 @@ export default function App() {
           </div>
         </header>
 
-        <nav className="hidden gap-2 rounded-lg border border-slate-200 bg-white p-2 shadow-sm sm:flex sm:w-fit">
+        <nav className="hidden gap-2 rounded-lg border border-slate-200 bg-white p-2 shadow-sm lg:flex lg:w-fit">
           <TabButton
             active={state.activeTab === 'quest' && !state.showToc}
             icon={Compass}
@@ -1852,7 +1852,7 @@ export default function App() {
           />
         </nav>
 
-        <nav className="mobile-bottom-tabs fixed inset-x-0 bottom-0 z-50 border-t border-slate-200 bg-white/95 px-3 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] pt-2 shadow-[0_-16px_34px_rgba(0,0,0,0.24)] backdrop-blur-xl sm:hidden">
+        <nav className="mobile-bottom-tabs fixed inset-x-0 bottom-0 z-50 border-t border-slate-200 bg-white/95 px-3 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] pt-2 shadow-[0_-16px_34px_rgba(0,0,0,0.24)] backdrop-blur-xl lg:hidden">
           <div className="mx-auto grid max-w-md grid-cols-4 gap-1">
             <TabButton
               variant="bottom"
@@ -2002,7 +2002,7 @@ export default function App() {
                   </button>
                 </div>
 
-                <div className="mobile-stat-strip mt-3 flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 sm:hidden">
+                <div className="mobile-stat-strip mt-3 flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 lg:hidden">
                   <span className="min-w-0 flex-1">
                     <span className="block text-[10px] font-black uppercase tracking-wide text-slate-500">{compactStats.week}</span>
                     <span className="mt-0.5 block text-sm font-black text-slate-950">{weekCompleted}/{weeklyMissionCount}</span>
