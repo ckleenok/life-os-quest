@@ -2021,10 +2021,7 @@ export default function App() {
 
                 {/* Day + mission header */}
                 <div>
-                  <p className="text-sm font-black text-slate-500">
-                    {tr(selectedDay.label, lang)} · {formatDate(getDayDate(state.selectedVersion, state.selectedWeek, selectedDay.id))} · {tr(selectedDay.title, lang)}
-                  </p>
-                  <h2 className="mt-1 text-2xl font-black text-slate-950">
+                  <h2 className="text-2xl font-black text-slate-950">
                     {selectedDay.rest ? c.todayRest : c.todayMissions}
                   </h2>
                   <p className="mission-day-plan mt-1 hidden max-w-2xl text-sm leading-6 text-slate-500 sm:block">{tr(selectedDayPlan, lang)}</p>
