@@ -1701,7 +1701,7 @@ export default function App() {
   }
 
   return (
-    <main className="life-dashboard flex min-h-screen flex-col bg-[#f7f8fb] text-slate-900">
+    <main className={`life-dashboard flex flex-col bg-[#f7f8fb] text-slate-900 ${state.activeTab === 'quest' ? 'h-screen overflow-hidden' : 'min-h-screen'}`}>
       <section className="mx-auto flex w-full max-w-[96rem] flex-1 flex-col gap-2 px-3 pb-20 pt-2 sm:gap-6 sm:px-6 sm:py-5 lg:pb-5 lg:px-8 2xl:max-w-[104rem]">
         <div className="mobile-home-card rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm lg:hidden">
           {/* Row 1: name + controls */}
