@@ -1744,6 +1744,17 @@ export default function App() {
           </div>
         </div>
 
+        <div className="lg:hidden">
+          <FamilyScheduleVisibility
+            allUsersData={allUsersData}
+            selectedVersion={state.selectedVersion}
+            selectedWeek={state.selectedWeek}
+            selectedDayId={selectedDay.id}
+            lang={lang}
+            calendarNode={null}
+          />
+        </div>
+
         <header className="desktop-hero hidden gap-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:grid md:grid-cols-[1.15fr_0.75fr_0.95fr] md:items-center">
           <div>
             <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-sm font-semibold text-emerald-700">
@@ -2028,24 +2039,26 @@ export default function App() {
                 </div>
               </div>
 
-              <FamilyScheduleVisibility
-                allUsersData={allUsersData}
-                selectedVersion={state.selectedVersion}
-                selectedWeek={state.selectedWeek}
-                selectedDayId={selectedDay.id}
-                lang={lang}
-                calendarNode={clientId ? (gToken ? (
-                  <div className="flex items-center gap-2 text-xs text-slate-400">
-                    <CalendarDays size={13} className={calSyncing ? 'animate-pulse text-blue-400' : calSynced ? 'text-emerald-400' : 'text-slate-500'} />
-                    <span>{calSyncing ? '동기화 중...' : calSynced ? '동기화 완료' : '연결됨'}</span>
-                    {calSynced && <button type="button" onClick={() => { hasSyncedRef.current = false; syncCalendar(gToken, allUsersData, lang) }} className="font-black hover:text-white">재동기화</button>}
-                  </div>
-                ) : (
-                  <button type="button" onClick={connectGoogleCalendar} className="flex items-center gap-1 text-xs font-black text-slate-400 hover:text-blue-400">
-                    <CalendarDays size={13} />연결
-                  </button>
-                )) : null}
-              />
+              <div className="hidden lg:block">
+                <FamilyScheduleVisibility
+                  allUsersData={allUsersData}
+                  selectedVersion={state.selectedVersion}
+                  selectedWeek={state.selectedWeek}
+                  selectedDayId={selectedDay.id}
+                  lang={lang}
+                  calendarNode={clientId ? (gToken ? (
+                    <div className="flex items-center gap-2 text-xs text-slate-400">
+                      <CalendarDays size={13} className={calSyncing ? 'animate-pulse text-blue-400' : calSynced ? 'text-emerald-400' : 'text-slate-500'} />
+                      <span>{calSyncing ? '동기화 중...' : calSynced ? '동기화 완료' : '연결됨'}</span>
+                      {calSynced && <button type="button" onClick={() => { hasSyncedRef.current = false; syncCalendar(gToken, allUsersData, lang) }} className="font-black hover:text-white">재동기화</button>}
+                    </div>
+                  ) : (
+                    <button type="button" onClick={connectGoogleCalendar} className="flex items-center gap-1 text-xs font-black text-slate-400 hover:text-blue-400">
+                      <CalendarDays size={13} />연결
+                    </button>
+                  )) : null}
+                />
+              </div>
             </div>
 
             <div className="grid gap-4 lg:grid-cols-[1fr_280px] xl:grid-cols-[1fr_320px]">
