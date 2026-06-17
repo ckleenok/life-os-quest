@@ -1324,7 +1324,7 @@ function loadGoogleIdentityScript() {
   })
 }
 
-const isNativeApp = typeof navigator !== 'undefined' && navigator.userAgent.includes('LifeOSNativeApp')
+const isNativeApp = (typeof window !== 'undefined' && window.__isNativeApp === true) || (typeof navigator !== 'undefined' && navigator.userAgent.includes('LifeOSNativeApp'))
 
 export default function App() {
   const [currentUserId, setCurrentUserId] = useState(loadCurrentUserId)
