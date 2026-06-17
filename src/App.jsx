@@ -2110,16 +2110,16 @@ export default function App() {
                   <NotebookPen size={13} />
                 </div>
                 <div className="min-w-0">
-                  <h2 className="text-xs font-black text-slate-950">{memoTitle}</h2>
+                  <h2 className="text-sm font-black text-slate-950">{memoTitle}</h2>
                   <p className="text-[9px] text-slate-500">{memoHint}</p>
                 </div>
               </div>
               <textarea
-                rows={2}
+                rows={1}
                 value={state.memos[memoKey] ?? ''}
                 onChange={(event) => setMemo(event.target.value)}
-                style={{ height: '44px' }}
-                className="mt-1 w-full resize-none rounded border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] leading-4 text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-emerald-400 focus:bg-white focus:ring-2 focus:ring-emerald-100"
+                style={{ height: '28px' }}
+                className="mt-1 w-full resize-none rounded border border-slate-200 bg-slate-50 px-2 py-1 text-[9px] leading-4 text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-emerald-400 focus:bg-white focus:ring-2 focus:ring-emerald-100"
                 placeholder={memoPlaceholder}
               />
             </div>
