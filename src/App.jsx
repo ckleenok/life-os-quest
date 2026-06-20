@@ -2202,9 +2202,12 @@ function FamilyScheduleVisibility({ allUsersData, selectedVersion, selectedWeek,
 
   return (
     <div className="mobile-family-board rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm">
-      <p className="text-[11px] font-black uppercase tracking-widest text-emerald-600">
-        {lang === 'ko' ? '가족 일정' : 'Family Schedule'}
-      </p>
+      <div className="flex items-center justify-between">
+        <p className="text-[11px] font-black uppercase tracking-widest text-emerald-600">
+          {lang === 'ko' ? '가족 일정' : 'Family Schedule'}
+        </p>
+        {calendarNode}
+      </div>
 
       <div className="mt-2 grid grid-cols-2 gap-2">
         {sections.map((section) => (
@@ -2402,8 +2405,8 @@ function WeekPlannerCalendar({
 
 function ActivityPool({ c, lang, requiredCounts, scheduledCounts, onQuickAdd, canLoadPrevious, onLoadPreviousWeek, onResetPlan }) {
   return (
-    <aside className="hidden rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:block">
-      <div className="flex items-start justify-between gap-3">
+    <aside className="mobile-activity-pool rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="mobile-activity-pool-header flex items-start justify-between gap-3">
         <div>
           <p className="text-sm font-black text-slate-500">{c.activityPool ?? copy.en.activityPool}</p>
           <h2 className="mt-1 text-lg font-black text-slate-950">{c.weekAtGlance}</h2>
@@ -2425,13 +2428,13 @@ function ActivityPool({ c, lang, requiredCounts, scheduledCounts, onQuickAdd, ca
         type="button"
         onClick={onLoadPreviousWeek}
         disabled={!canLoadPrevious}
-        className="mt-4 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-emerald-400 bg-emerald-50 px-3 text-sm font-black text-emerald-700 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-50 disabled:text-slate-400 disabled:hover:translate-y-0"
+        className="mobile-activity-pool-load mt-4 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-emerald-400 bg-emerald-50 px-3 text-sm font-black text-emerald-700 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-50 disabled:text-slate-400 disabled:hover:translate-y-0"
       >
         <CalendarCheck size={16} />
         {c.loadPreviousWeek ?? copy.en.loadPreviousWeek}
       </button>
 
-      <div className="mt-4 grid gap-2">
+      <div className="mobile-activity-pool-list mt-4 grid gap-2">
         {Object.entries(requiredCounts).map(([missionId, required]) => {
           const mission = missionMap[missionId]
           const scheduled = scheduledCounts[missionId] ?? 0
@@ -2439,20 +2442,20 @@ function ActivityPool({ c, lang, requiredCounts, scheduledCounts, onQuickAdd, ca
           const Icon = mission.icon
 
           return (
-            <div key={missionId} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-              <div className="flex items-center gap-2">
-                <div className={`grid h-8 w-8 place-items-center rounded-lg border ${mission.tone}`}>
+            <div key={missionId} className="mobile-activity-card rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <div className="mobile-activity-card-head flex items-center gap-2">
+                <div className={`mobile-activity-icon grid h-8 w-8 place-items-center rounded-lg border ${mission.tone}`}>
                   <Icon size={17} />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-black text-slate-950">{tr(mission.ko, lang)}</p>
-                  <p className="text-xs font-bold text-slate-500">
+                  <p className="mobile-activity-title truncate text-sm font-black text-slate-950">{tr(mission.ko, lang)}</p>
+                  <p className="mobile-activity-count text-xs font-bold text-slate-500">
                     {scheduled}/{required} {c.planned ?? copy.en.planned}
                   </p>
                 </div>
               </div>
 
-              <div className="mt-3 flex flex-wrap gap-1.5">
+              <div className="mobile-activity-chips mt-3 flex flex-wrap gap-1.5">
                 {Array.from({ length: remaining }).map((_, index) => (
                   <span
                     key={`${missionId}-${index}`}
@@ -2466,14 +2469,14 @@ function ActivityPool({ c, lang, requiredCounts, scheduledCounts, onQuickAdd, ca
                     onDragStart={(event) => {
                       event.dataTransfer.setData('application/json', JSON.stringify({ missionId, sourceDayId: 'pool' }))
                     }}
-                    className="inline-flex cursor-grab items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-1 text-xs font-black text-slate-600 active:cursor-grabbing"
+                    className="mobile-activity-chip inline-flex cursor-grab items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-1 text-xs font-black text-slate-600 active:cursor-grabbing"
                   >
                     <GripVertical size={12} />
                     {tr(mission.ko, lang)}
                   </span>
                 ))}
                 {remaining === 0 && (
-                  <span className="rounded-full border border-emerald-400 bg-emerald-50 px-2 py-1 text-xs font-black text-emerald-700">
+                  <span className="mobile-activity-chip rounded-full border border-emerald-400 bg-emerald-50 px-2 py-1 text-xs font-black text-emerald-700">
                     {c.planned ?? copy.en.planned}
                   </span>
                 )}
