@@ -7,9 +7,11 @@ import {
   CalendarCheck,
   CalendarDays,
   CheckCircle2,
+  ChevronDown,
   Clock3,
   Compass,
   Dumbbell,
+  Flame,
   Gauge,
   GripVertical,
   ListTree,
@@ -20,6 +22,7 @@ import {
   Sparkles,
   Trophy,
   UserRound,
+  Zap,
 } from 'lucide-react'
 import { initTokenClient, listLifeOsEvents, createCalendarEvent, deleteCalendarEvent } from './gcal.js'
 
@@ -35,10 +38,10 @@ const users = [
 ]
 
 const userBadgeStyles = {
-  CK: 'border-cyan-400 bg-cyan-500/15 text-cyan-200',
-  Ella: 'border-fuchsia-400 bg-fuchsia-500/15 text-fuchsia-200',
-  Mark: 'border-amber-400 bg-amber-500/15 text-amber-200',
-  Sally: 'border-emerald-400 bg-emerald-500/15 text-emerald-200',
+  CK: 'border-cyan-300 bg-cyan-100 text-cyan-800',
+  Ella: 'border-fuchsia-300 bg-fuchsia-100 text-fuchsia-800',
+  Mark: 'border-amber-300 bg-amber-100 text-amber-800',
+  Sally: 'border-teal-300 bg-teal-100 text-teal-800',
 }
 const versionWeekOffsets = {
   v1: 0,
@@ -52,6 +55,7 @@ const copy = {
     currentLevel: 'Current Reward Level',
     highestLevel: 'Max level',
     quest: 'Quest',
+    plan: 'Plan',
     progress: 'Progress',
     diary: '일기',
     roadmap: 'Roadmap',
@@ -97,8 +101,10 @@ const copy = {
     weekPlanner: '1-Week Planner',
     activityPool: 'Activities to Schedule',
     dragHint: 'Drag activities into any day of the 1-week calendar.',
+    tapHint: 'Tap a day, then tap an activity below to add it.',
     resetPlan: 'Reset Plan',
     loadPreviousWeek: 'Load Previous Week Plan',
+    loadPreviousWeekShort: 'Load Last Week',
     planned: 'planned',
     remaining: 'remaining',
     dropHere: 'Drop here',
@@ -118,6 +124,7 @@ const copy = {
     currentLevel: '현재 보상 레벨',
     highestLevel: '최고 레벨',
     quest: 'Quest',
+    plan: '플랜',
     progress: 'Progress',
     roadmap: '로드맵',
     versionSelect: '챕터 선택',
@@ -647,7 +654,7 @@ const createDefaultState = () => {
     activeTab: 'quest',
     diaryView: 'week',
     lang: 'en',
-    showToc: true,
+    showToc: false,
     lastOpenedDate: null,
     completed: {},
     memos: {},
@@ -1093,6 +1100,36 @@ function getPrevDayRef(version, week, dayId) {
   return { version: prevWeek.version, week: prevWeek.week, dayId: days[days.length - 1].id }
 }
 
+function getCurrentStreak(completed, schedules) {
+  let { version, week, dayId } = getTodayVersionWeekDay()
+  let streak = 0
+
+  for (let i = 0; i < 365; i += 1) {
+    if (week < 1) break
+    const day = days.find((item) => item.id === dayId) ?? days[0]
+    let dayComplete = true
+
+    if (!day.rest) {
+      const missions = getDayMissions(version, week, day, schedules)
+      if (missions.length === 0) break
+      dayComplete = missions.every((mission) => completed[getMissionKey(version, week, dayId, mission.id)])
+    }
+
+    if (!dayComplete) {
+      if (i !== 0) break
+    } else {
+      streak += 1
+    }
+
+    const prev = getPrevDayRef(version, week, dayId)
+    version = prev.version
+    week = prev.week
+    dayId = prev.dayId
+  }
+
+  return streak
+}
+
 function formatLongDate(date, lang) {
   return new Intl.DateTimeFormat(lang === 'ko' ? 'en-GB' : 'en-GB', {
     day: 'numeric',
@@ -1188,6 +1225,20 @@ function getPersonalDiaryEntries(memos, version, selectedWeek, diaryView) {
       text: getDiaryEntry(memos, version, week, day.id),
     })).filter((entry) => entry.text)
   )
+}
+
+function getAllDiaryEntries(memos) {
+  const entries = []
+  Object.keys(versions).forEach((versionKey) => {
+    versions[versionKey].weeks.forEach((_, index) => {
+      const week = index + 1
+      days.forEach((day) => {
+        const text = getDiaryEntry(memos, versionKey, week, day.id)
+        if (text) entries.push({ version: versionKey, week, day, text })
+      })
+    })
+  })
+  return entries
 }
 
 function buildDiaryKnowledgeGraph(entries) {
@@ -1415,19 +1466,30 @@ export default function App() {
 
   useEffect(() => {
     setIsLoading(true)
+    const landOnQuest = (s) => {
+      const { version, week, dayId } = getTodayVersionWeekDay()
+      return {
+        ...s,
+        activeTab: 'quest',
+        showToc: false,
+        selectedVersion: version,
+        selectedWeek: week,
+        selectedDay: dayId,
+      }
+    }
     fetchUserState(currentUserId)
       .then((remoteState) => {
         if (remoteState) {
-          setState(applyFirstOpenToday(migrateState({ ...createDefaultState(), ...remoteState })))
+          setState(landOnQuest(applyFirstOpenToday(migrateState({ ...createDefaultState(), ...remoteState }))))
         } else {
           const localState = loadState(currentUserId)
           const merged = applyFirstOpenToday(localState)
-          setState(merged)
+          setState(landOnQuest(merged))
           upsertUserState(currentUserId, merged).catch(console.error)
         }
       })
       .catch(() => {
-        setState(applyFirstOpenToday(loadState(currentUserId)))
+        setState(landOnQuest(applyFirstOpenToday(loadState(currentUserId))))
       })
       .finally(() => setIsLoading(false))
   }, [currentUserId])
@@ -1475,6 +1537,11 @@ export default function App() {
   const levelProgress = nextLevel
     ? Math.min(100, Math.round(((totalXp - activeLevel.min) / (nextLevel.min - activeLevel.min)) * 100))
     : 100
+
+  const currentStreak = useMemo(
+    () => getCurrentStreak(state.completed, state.schedules),
+    [state.completed, state.schedules],
+  )
 
   const version = versions[state.selectedVersion]
   const selectedDay = days.find((day) => day.id === state.selectedDay) ?? days[0]
@@ -1643,6 +1710,26 @@ export default function App() {
     })
   }
 
+  const removeMissionFromDay = ({ missionId, dayId }) => {
+    if (missionId === 'memo' || missionId === 'weekend-review') return
+    setState((current) => {
+      const scheduleKey = getScheduleKey(current.selectedVersion, current.selectedWeek)
+      const schedule = getWeekSchedule(current.schedules, current.selectedVersion, current.selectedWeek)
+      const nextSchedule = Object.fromEntries(days.map((day) => [day.id, [...(schedule[day.id] ?? [])]]))
+      nextSchedule[dayId] = nextSchedule[dayId].filter((id) => id !== missionId)
+      const completed = { ...current.completed }
+      delete completed[getMissionKey(current.selectedVersion, current.selectedWeek, dayId, missionId)]
+      return {
+        ...current,
+        completed,
+        schedules: {
+          ...current.schedules,
+          [scheduleKey]: nextSchedule,
+        },
+      }
+    })
+  }
+
   const resetCurrentPlan = () => {
     setState((current) => {
       const scheduleKey = getScheduleKey(current.selectedVersion, current.selectedWeek)
@@ -1689,6 +1776,23 @@ export default function App() {
     })
   }
 
+  const swipeRef = useRef(null)
+  const longPressTimerRef = useRef(null)
+  const longPressFiredRef = useRef(false)
+  const [moveMenuMissionId, setMoveMenuMissionId] = useState(null)
+
+  const handleMissionPressStart = (missionId) => {
+    longPressFiredRef.current = false
+    clearTimeout(longPressTimerRef.current)
+    longPressTimerRef.current = setTimeout(() => {
+      longPressFiredRef.current = true
+      setMoveMenuMissionId(missionId)
+    }, 480)
+  }
+  const handleMissionPressEnd = () => {
+    clearTimeout(longPressTimerRef.current)
+  }
+
   if (isLoading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#f7f8fb]">
@@ -1700,23 +1804,46 @@ export default function App() {
     )
   }
 
+  const tabOrder = [
+    { tab: 'quest', showToc: false },
+    { tab: 'plan', showToc: false },
+    { tab: 'quest', showToc: true },
+    { tab: 'diary', showToc: false },
+  ]
+  const currentTabIndex = tabOrder.findIndex(
+    (t) => t.tab === state.activeTab && t.showToc === (state.showToc ?? false)
+  )
+  const handleTouchStart = (e) => { swipeRef.current = e.touches[0].clientX }
+  const handleTouchEnd = (e) => {
+    if (swipeRef.current === null) return
+    const diff = swipeRef.current - e.changedTouches[0].clientX
+    swipeRef.current = null
+    if (Math.abs(diff) < 50) return
+    if (currentTabIndex === -1) return
+    const next = diff > 0
+      ? tabOrder[Math.min(currentTabIndex + 1, tabOrder.length - 1)]
+      : tabOrder[Math.max(currentTabIndex - 1, 0)]
+    if (next) updateState({ activeTab: next.tab, showToc: next.showToc })
+  }
+
   return (
-    <main className="life-dashboard flex flex-col bg-[#f7f8fb] text-slate-900" style={{ height: '100dvh' }}>
+    <main
+      className="life-dashboard flex flex-col bg-[#f7f8fb] text-slate-900"
+      style={{ height: '100dvh' }}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
       <section className="mx-auto w-full max-w-[96rem] flex-1 space-y-2 overflow-y-auto px-3 pb-4 pt-[calc(env(safe-area-inset-top)+0.5rem)] sm:px-6 sm:py-5 lg:px-8 2xl:max-w-[104rem]">
-        <div className="mobile-home-card rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm lg:hidden">
-          {/* Row 1: name + controls */}
+        <div className="mobile-home-card relative rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-sm lg:hidden">
+          {/* Row 1: avatar (user switch) + name + lang + level pill */}
           <div className="flex items-center justify-between gap-2">
-            <div className="flex min-w-0 items-center gap-1.5">
-              <div className="min-w-0">
-                <p className="text-[10px] font-black uppercase tracking-[0.14em] text-emerald-600">Life Game</p>
-                <h1 className="truncate text-base font-black text-slate-950">{currentUser.name}</h1>
-              </div>
-              <label className="flex h-7 items-center gap-1 rounded-md border border-slate-200 bg-slate-50 px-1.5">
-                <UserRound size={12} className="text-emerald-600" />
+            <div className="flex min-w-0 items-center gap-3">
+              <label className="relative grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#E2E5E1] text-sm font-black text-[#7d887b]">
+                {currentUser.name?.slice(0, 2)?.toUpperCase()}
                 <select
                   value={currentUserId}
                   onChange={(event) => switchUser(event.target.value)}
-                  className="w-12 bg-transparent text-xs font-black text-slate-950 outline-none"
+                  className="absolute inset-0 h-full w-full cursor-pointer rounded-full bg-transparent text-transparent outline-none"
                   aria-label={c.activeMember ?? copy.en.activeMember}
                 >
                   {users.map((user) => (
@@ -1724,38 +1851,55 @@ export default function App() {
                   ))}
                 </select>
               </label>
+              <div className="min-w-0">
+                <p className="text-xs font-medium text-slate-400">Life game</p>
+                <h1 className="truncate text-lg font-medium text-slate-950">{currentUser.name}</h1>
+              </div>
             </div>
-            <div className="grid shrink-0 grid-cols-2 rounded-md border border-slate-200 bg-slate-50 p-0.5">
-              {['ko', 'en'].map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => updateState({ lang: option })}
-                  className={`h-6 rounded px-2 text-[10px] font-black transition ${
-                    lang === option ? 'bg-emerald-500 text-slate-950' : 'text-slate-400'
-                  }`}
-                >
-                  {option.toUpperCase()}
-                </button>
-              ))}
+            <div className="flex shrink-0 items-center gap-2">
+              <div className="flex h-8 shrink-0 rounded-md bg-slate-100 p-0.5">
+                {['ko', 'en'].map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => updateState({ lang: option })}
+                    className={`h-7 rounded px-2 text-xs font-medium transition ${
+                      lang === option ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400'
+                    }`}
+                  >
+                    {option.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  updateState(
+                    state.activeTab === 'progress'
+                      ? { activeTab: 'quest', showToc: false }
+                      : { activeTab: 'progress' },
+                  )
+                }
+                className={`flex h-8 shrink-0 items-center gap-1 rounded-full px-3 text-xs font-medium transition active:bg-slate-200 ${
+                  state.activeTab === 'progress' ? 'bg-[#E2E5E1] text-[#4f594c]' : 'bg-slate-100 text-slate-700'
+                }`}
+              >
+                <Zap size={14} className="text-amber-500" />
+                Lv.{activeLevelIndex + 1}
+              </button>
             </div>
           </div>
-          {/* Row 2: achievement stats */}
-          <div className="mt-2 flex items-center rounded-md border border-slate-100 bg-slate-50 px-2 py-1.5">
-            <span className="min-w-0 flex-1 text-center">
-              <span className="block text-[9px] font-black uppercase tracking-wide text-slate-400">{compactStats.week}</span>
-              <span className="block text-sm font-black text-slate-900">{weekCompleted}/{weeklyMissionCount}</span>
-            </span>
-            <span className="h-6 w-px bg-slate-200" />
-            <span className="min-w-0 flex-1 text-center">
-              <span className="block text-[9px] font-black uppercase tracking-wide text-slate-400">{compactStats.day}</span>
-              <span className="block text-sm font-black text-slate-900">{selectedDay.rest ? c.rest : `${dayCompleted}/${dayMissions.length}`}</span>
-            </span>
-            <span className="h-6 w-px bg-slate-200" />
-            <span className="min-w-0 flex-1 text-center">
-              <span className="block text-[9px] font-black uppercase tracking-wide text-slate-400">{compactStats.xp}</span>
-              <span className="block text-sm font-black text-slate-900">{totalXp}</span>
-            </span>
+
+          {/* Row 2: streak + XP */}
+          <div className="mt-3 flex items-center gap-3 rounded-md bg-slate-50 px-3 py-2.5">
+            <div className="flex shrink-0 items-center gap-1.5 text-xs font-medium text-slate-600">
+              <Flame size={15} className="text-amber-500" />
+              {lang === 'ko' ? `${currentStreak}일 연속` : `${currentStreak}-day streak`}
+            </div>
+            <div className="text-xs font-medium text-slate-900">{totalXp.toLocaleString()} XP</div>
+            <div className="ml-auto h-2 w-24 shrink-0 overflow-hidden rounded-full bg-slate-200">
+              <div className="h-full rounded-full bg-[#A7B1A5]" style={{ width: `${levelProgress}%` }} />
+            </div>
           </div>
         </div>
 
@@ -1895,6 +2039,7 @@ export default function App() {
         {state.activeTab === 'quest' ? (
           <>
             {state.showToc && (
+              <>
               <CurriculumToc
                 curriculum={curriculum}
                 selectedVersion={state.selectedVersion}
@@ -1910,14 +2055,24 @@ export default function App() {
                   })
                 }
               />
+              <CurriculumCheck
+                c={c}
+                lang={lang}
+                curriculum={curriculum}
+                completed={state.completed}
+                onSelect={(version, startWeek) =>
+                  updateState({ selectedVersion: version, selectedWeek: startWeek, selectedDay: 'mon' })
+                }
+              />
+              </>
             )}
 
         {!state.showToc && (
         <section className="grid gap-2">
           <section className="space-y-2">
-            <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm">
+            <div className="rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-sm">
                 {/* Week nav */}
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => {
@@ -1925,7 +2080,7 @@ export default function App() {
                       if (prev) updateState({ selectedVersion: prev.version, selectedWeek: prev.week, selectedDay: 'mon' })
                     }}
                     disabled={!getPrevVersionWeek(state.selectedVersion, state.selectedWeek)}
-                    className="grid h-6 w-6 shrink-0 place-items-center rounded border border-slate-200 text-slate-500 hover:border-slate-400 disabled:opacity-30"
+                    className="grid h-7 w-7 shrink-0 place-items-center rounded border border-slate-200 text-slate-500 hover:border-slate-400 disabled:opacity-30"
                   >‹</button>
                   <p className="min-w-0 flex-1 truncate text-xs font-black text-emerald-600">
                     {version.label} · Week {state.selectedWeek} ·{' '}
@@ -1938,7 +2093,7 @@ export default function App() {
                       if (next) updateState({ selectedVersion: next.version, selectedWeek: next.week, selectedDay: 'mon' })
                     }}
                     disabled={!getNextVersionWeek(state.selectedVersion, state.selectedWeek)}
-                    className="grid h-6 w-6 shrink-0 place-items-center rounded border border-slate-200 text-slate-500 hover:border-slate-400 disabled:opacity-30"
+                    className="grid h-7 w-7 shrink-0 place-items-center rounded border border-slate-200 text-slate-500 hover:border-slate-400 disabled:opacity-30"
                   >›</button>
                   <button
                     type="button"
@@ -1946,37 +2101,28 @@ export default function App() {
                       const { version: v, week: w, dayId } = getTodayVersionWeekDay()
                       updateState({ selectedVersion: v, selectedWeek: w, selectedDay: dayId })
                     }}
-                    className="inline-flex h-6 shrink-0 items-center rounded border border-emerald-300 bg-emerald-50 px-1.5 text-[10px] font-black text-emerald-700 hover:bg-emerald-100"
+                    className="inline-flex h-7 shrink-0 items-center rounded border border-emerald-300 bg-emerald-50 px-2 text-xs font-black text-emerald-700 hover:bg-emerald-100"
                   >오늘</button>
                 </div>
 
                 {/* Week title */}
-                <h2 className="mt-0.5 text-sm font-black text-slate-950">{tr(version.weeks[state.selectedWeek - 1], lang)}</h2>
+                <h2 className="mt-1 text-base font-black text-slate-950">{tr(version.weeks[state.selectedWeek - 1], lang)}</h2>
                 <p className="theme-copy hidden text-xs leading-4 text-slate-500 sm:block">{tr(version.theme, lang)}</p>
 
                 {/* Day nav */}
-                <div className="mt-1.5 flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const prev = getPrevDayRef(state.selectedVersion, state.selectedWeek, state.selectedDay)
-                      updateState({ selectedVersion: prev.version, selectedWeek: prev.week, selectedDay: prev.dayId })
-                    }}
-                    className="grid h-6 w-6 shrink-0 place-items-center rounded border border-slate-200 text-slate-500 hover:border-slate-400"
-                    aria-label={lang === 'ko' ? '이전 날' : 'Previous day'}
-                  >‹</button>
-                  <p className="min-w-0 flex-1 truncate text-center text-xs font-black text-slate-500">
-                    {tr(selectedDay.label, lang)} · {formatDate(getDayDate(state.selectedVersion, state.selectedWeek, selectedDay.id))}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const next = getNextDayRef(state.selectedVersion, state.selectedWeek, state.selectedDay)
-                      updateState({ selectedVersion: next.version, selectedWeek: next.week, selectedDay: next.dayId })
-                    }}
-                    className="grid h-6 w-6 shrink-0 place-items-center rounded border border-slate-200 text-slate-500 hover:border-slate-400"
-                    aria-label={lang === 'ko' ? '다음 날' : 'Next day'}
-                  >›</button>
+                <div className="mt-2.5 flex items-center gap-1.5">
+                  {days.map((day) => (
+                    <button
+                      key={day.id}
+                      type="button"
+                      onClick={() => updateState({ selectedDay: day.id })}
+                      className={`flex-1 rounded-md py-2 text-center text-xs font-medium transition ${
+                        selectedDay.id === day.id ? 'bg-[#E2E5E1] text-[#7d887b]' : 'text-slate-400'
+                      }`}
+                    >
+                      {tr(day.label, lang)}
+                    </button>
+                  ))}
                 </div>
 
                 {/* Desktop stats */}
@@ -1987,11 +2133,11 @@ export default function App() {
                 </div>
 
                 {/* Divider */}
-                <div className="my-1.5 border-t border-slate-100" />
+                <div className="my-2.5 border-t border-slate-100" />
 
                 {/* Mission header */}
                 <div>
-                  <h2 className="text-sm font-black text-slate-950">
+                  <h2 className="text-base font-black text-slate-950">
                     {selectedDay.rest ? c.todayRest : c.todayMissions}
                   </h2>
                   <p className="mission-day-plan hidden max-w-2xl text-xs leading-4 text-slate-500 sm:block">{tr(selectedDayPlan, lang)}</p>
@@ -2021,7 +2167,7 @@ export default function App() {
                     </p>
                   </div>
                 ) : (
-                  <div className="mt-1.5 grid grid-cols-4 gap-1.5">
+                  <div className="mt-2.5 grid grid-cols-2 gap-3">
                     {dayMissions.map((mission, index) => {
                       const completed = Boolean(
                         state.completed[getMissionKey(state.selectedVersion, state.selectedWeek, selectedDay.id, mission.id)],
@@ -2034,28 +2180,32 @@ export default function App() {
                           initial={{ opacity: 0, y: 12 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: index * 0.03 }}
-                          onClick={() => toggleMission(mission.id)}
-                          className={`mission-card rounded-md border bg-white p-1.5 text-left shadow-sm transition active:scale-95 ${
-                            completed ? 'border-emerald-300 ring-1 ring-emerald-100' : 'border-slate-200'
+                          onClick={() => {
+                            if (longPressFiredRef.current) {
+                              longPressFiredRef.current = false
+                              return
+                            }
+                            toggleMission(mission.id)
+                          }}
+                          onTouchStart={() => handleMissionPressStart(mission.id)}
+                          onTouchEnd={handleMissionPressEnd}
+                          onTouchMove={handleMissionPressEnd}
+                          onTouchCancel={handleMissionPressEnd}
+                          onContextMenu={(event) => event.preventDefault()}
+                          className={`mission-card rounded-md p-3 text-left transition active:scale-95 ${
+                            completed ? 'border border-green-300 bg-green-50' : 'border-0 bg-slate-50'
                           }`}
                         >
                           <div className="flex items-start justify-between gap-1">
-                            <div className={`mission-icon grid h-6 w-6 shrink-0 place-items-center rounded border ${mission.tone}`}>
-                              <Icon size={13} />
-                            </div>
-                            <CheckCircle2 className={`mission-check shrink-0 ${completed ? 'text-emerald-500' : 'text-slate-300'}`} size={13} />
+                            <Icon size={19} className={completed ? 'text-green-600' : 'text-slate-500'} />
+                            {completed ? (
+                              <CheckCircle2 className="mission-check shrink-0 text-green-600" size={17} />
+                            ) : (
+                              <div className="mission-check h-4 w-4 shrink-0 rounded-full border border-slate-300" />
+                            )}
                           </div>
-                          <p className="mission-title mt-1.5 line-clamp-2 text-[10px] font-black leading-tight text-slate-950">{tr(mission.ko, lang)}</p>
-                          <div className="mission-xp mt-1 inline-flex rounded-full bg-slate-100 px-1 py-0.5 text-[9px] font-black text-slate-700">
-                            +{mission.xp} XP
-                          </div>
-                          <div className="mission-stats mt-0.5 flex flex-wrap gap-0.5">
-                            {Object.entries(mission.statRewards ?? {}).map(([statId, points]) => (
-                              <span key={statId} className="rounded-full border border-slate-200 bg-slate-50 px-1 py-0.5 text-[8px] font-black text-slate-500">
-                                {tr(statMap[statId]?.label, lang)} +{points}
-                              </span>
-                            ))}
-                          </div>
+                          <p className="mission-title mt-2 line-clamp-2 text-xs font-medium leading-tight text-slate-900">{tr(mission.ko, lang)}</p>
+                          <span className="mission-xp mt-1.5 inline-block text-xs text-slate-500">+{mission.xp} XP</span>
                         </motion.button>
                       )
                     })}
@@ -2073,29 +2223,40 @@ export default function App() {
                 onResetPlan={resetCurrentPlan}
               />
             </div>
-
-            <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm">
-              <div className="flex items-center gap-1.5">
-                <div className="grid h-6 w-6 shrink-0 place-items-center rounded bg-indigo-50 text-indigo-700">
-                  <NotebookPen size={13} />
-                </div>
-                <div className="min-w-0">
-                  <h2 className="text-sm font-black text-slate-950">{memoTitle}</h2>
-                  <p className="text-[9px] text-slate-500">{memoHint}</p>
-                </div>
-              </div>
-              <textarea
-                value={state.memos[memoKey] ?? ''}
-                onChange={(event) => setMemo(event.target.value)}
-                style={{ height: '72px' }}
-                className="mt-1.5 w-full resize-none rounded-md border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs leading-5 text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-emerald-400 focus:bg-white focus:ring-2 focus:ring-emerald-100"
-                placeholder={memoPlaceholder}
-              />
-            </div>
           </section>
         </section>
         )}
           </>
+        ) : state.activeTab === 'plan' ? (
+          <MobilePlanner
+            c={c}
+            lang={lang}
+            days={days}
+            version={version}
+            selectedVersion={state.selectedVersion}
+            selectedWeek={state.selectedWeek}
+            selectedDayId={selectedDay.id}
+            schedule={currentWeekSchedule}
+            completed={state.completed}
+            requiredCounts={requiredCounts}
+            scheduledCounts={scheduledCounts}
+            onSelectDay={(dayId) => updateState({ selectedDay: dayId })}
+            onQuickAdd={(missionId) => moveMissionToDay({ missionId, sourceDayId: 'pool', targetDayId: selectedDay.id })}
+            onRemove={(missionId, dayId) => removeMissionFromDay({ missionId, dayId })}
+            canLoadPrevious={Boolean(previousWeekRef)}
+            onLoadPreviousWeek={loadPreviousWeekPlan}
+            onResetPlan={resetCurrentPlan}
+            onPrevWeek={() => {
+              const prev = getPrevVersionWeek(state.selectedVersion, state.selectedWeek)
+              if (prev) updateState({ selectedVersion: prev.version, selectedWeek: prev.week, selectedDay: 'mon' })
+            }}
+            onNextWeek={() => {
+              const next = getNextVersionWeek(state.selectedVersion, state.selectedWeek)
+              if (next) updateState({ selectedVersion: next.version, selectedWeek: next.week, selectedDay: 'mon' })
+            }}
+            canPrevWeek={Boolean(getPrevVersionWeek(state.selectedVersion, state.selectedWeek))}
+            canNextWeek={Boolean(getNextVersionWeek(state.selectedVersion, state.selectedWeek))}
+          />
         ) : state.activeTab === 'diary' ? (
           <DiaryDashboard
             memos={state.memos}
@@ -2118,6 +2279,11 @@ export default function App() {
                 selectedDay: 'mon',
               })
             }
+            memoValue={state.memos[memoKey] ?? ''}
+            onMemoChange={setMemo}
+            memoTitle={memoTitle}
+            memoHint={memoHint}
+            memoPlaceholder={memoPlaceholder}
           />
         ) : (
           <ProgressDashboard
@@ -2162,11 +2328,49 @@ export default function App() {
         <nav className="mobile-bottom-tabs shrink-0 border-t border-slate-200 bg-white/95 px-3 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] pt-2 shadow-[0_-16px_34px_rgba(0,0,0,0.08)] backdrop-blur-xl lg:hidden">
           <div className="mx-auto grid max-w-md grid-cols-4 gap-1">
             <TabButton variant="bottom" active={state.activeTab === 'quest' && !state.showToc} icon={Compass} label={c.quest} onClick={() => updateState({ activeTab: 'quest', showToc: false })} />
-            <TabButton variant="bottom" active={state.activeTab === 'progress'} icon={Gauge} label={c.progress} onClick={() => updateState({ activeTab: 'progress' })} />
+            <TabButton variant="bottom" active={state.activeTab === 'plan'} icon={CalendarDays} label={c.plan ?? copy.en.plan} onClick={() => updateState({ activeTab: 'plan' })} />
             <TabButton variant="bottom" active={state.activeTab === 'quest' && state.showToc} icon={ListTree} label={c.roadmap} onClick={() => updateState({ showToc: !state.showToc, activeTab: 'quest' })} />
             <TabButton variant="bottom" active={state.activeTab === 'diary'} icon={NotebookPen} label={c.diary ?? copy.en.diary} onClick={() => updateState({ activeTab: 'diary' })} />
           </div>
         </nav>
+      )}
+
+      {moveMenuMissionId && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/30"
+          onClick={() => setMoveMenuMissionId(null)}
+        >
+          <div
+            className="w-full max-w-md rounded-t-2xl bg-white p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] shadow-lg"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <p className="text-center text-xs font-bold text-slate-400">
+              {tr(missionMap[moveMenuMissionId]?.ko, lang)} · {lang === 'ko' ? '다른 요일로 이동' : 'Move to another day'}
+            </p>
+            <div className="mt-3 grid grid-cols-4 gap-2">
+              {days.filter((day) => !day.rest && day.id !== selectedDay.id).map((day) => (
+                <button
+                  key={day.id}
+                  type="button"
+                  onClick={() => {
+                    moveMissionToDay({ missionId: moveMenuMissionId, sourceDayId: selectedDay.id, targetDayId: day.id })
+                    setMoveMenuMissionId(null)
+                  }}
+                  className="rounded-md bg-slate-50 py-2.5 text-sm font-medium text-slate-700 active:bg-slate-100"
+                >
+                  {tr(day.label, lang)}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => setMoveMenuMissionId(null)}
+              className="mt-3 w-full rounded-md py-2.5 text-sm font-medium text-slate-400 active:bg-slate-50"
+            >
+              {lang === 'ko' ? '취소' : 'Cancel'}
+            </button>
+          </div>
+        </div>
       )}
     </main>
   )
@@ -2183,69 +2387,64 @@ function Stat({ label, value }) {
 
 function FamilyScheduleVisibility({ allUsersData, selectedVersion, selectedWeek, selectedDayId, lang, calendarNode }) {
   const actualTodayRef = getTodayVersionWeekDay()
-  const sections = [
-    {
-      key: 'today',
-      ref: actualTodayRef,
-    },
-    {
-      key: 'tomorrow',
-      ref: getNextDayRef(actualTodayRef.version, actualTodayRef.week, actualTodayRef.dayId),
-    },
-  ].map((section) => {
-    const day = days.find((item) => item.id === section.ref.dayId) ?? days[0]
-    const activities = getDayScheduleSummary(allUsersData, section.ref.version, section.ref.week, section.ref.dayId)
-    return { ...section, day, activities }
-  })
+  const [dayRef, setDayRef] = useState(actualTodayRef)
+  const isToday = dayRef.version === actualTodayRef.version && dayRef.week === actualTodayRef.week && dayRef.dayId === actualTodayRef.dayId
+  const activities = getDayScheduleSummary(allUsersData, dayRef.version, dayRef.week, dayRef.dayId)
 
   const nameInitial = (name) => name[0]
 
   return (
-    <div className="mobile-family-board rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm">
-      <div className="flex items-center justify-between">
-        <p className="text-[11px] font-black uppercase tracking-widest text-emerald-600">
-          {lang === 'ko' ? '가족 일정' : 'Family Schedule'}
+    <div className="mobile-family-board rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-sm">
+      <div className="flex items-center justify-between gap-1.5">
+        <p className="shrink-0 text-xs font-medium text-slate-400">
+          {lang === 'ko' ? '가족 일정' : 'Family'}{isToday ? (lang === 'ko' ? ' · 오늘' : ' today') : ''}
         </p>
-        {calendarNode}
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => setDayRef(getPrevDayRef(dayRef.version, dayRef.week, dayRef.dayId))}
+            className="grid h-6 w-6 place-items-center rounded text-slate-400 hover:text-slate-600"
+            aria-label={lang === 'ko' ? '이전 날' : 'Previous day'}
+          >‹</button>
+          <p className="text-xs text-slate-400">
+            {formatLongDate(getDayDate(dayRef.version, dayRef.week, dayRef.dayId), lang)}
+          </p>
+          <button
+            type="button"
+            onClick={() => setDayRef(getNextDayRef(dayRef.version, dayRef.week, dayRef.dayId))}
+            className="grid h-6 w-6 place-items-center rounded text-slate-400 hover:text-slate-600"
+            aria-label={lang === 'ko' ? '다음 날' : 'Next day'}
+          >›</button>
+        </div>
       </div>
 
-      <div className="mt-2 grid grid-cols-2 gap-2">
-        {sections.map((section) => (
-          <div key={section.key} className="family-day-card rounded-md border border-slate-200 bg-slate-50 p-2">
-            <p className="mb-1.5 text-[11px] font-black text-slate-500">
-              {formatLongDate(getDayDate(section.ref.version, section.ref.week, section.ref.dayId), lang)}
-            </p>
-
-            <div className="grid gap-1">
-              {section.activities.length > 0 ? (
-                section.activities.map(({ missionId, names }) => (
-                  <div
-                    key={`${section.key}-${missionId}`}
-                    className="flex items-center justify-between gap-1 rounded border border-slate-200 bg-white px-2 py-1"
+      <div className="mt-2.5 grid gap-1.5">
+        {activities.length > 0 ? (
+          activities.map(({ missionId, names }) => (
+            <div
+              key={missionId}
+              className="flex items-center justify-between gap-1.5 rounded-md bg-slate-50 px-3 py-2"
+            >
+              <p className="min-w-0 truncate text-xs font-medium text-slate-700">{tr(missionMap[missionId]?.ko, lang)}</p>
+              <div className="flex shrink-0 gap-1">
+                {names.map((name) => (
+                  <span
+                    key={`${missionId}-${name}`}
+                    className={`grid h-5 w-5 place-items-center rounded-full border text-xs font-black leading-none ${
+                      userBadgeStyles[name] ?? 'border-slate-300 bg-slate-100 text-slate-700'
+                    }`}
                   >
-                    <p className="min-w-0 truncate text-[11px] font-black text-slate-800">{tr(missionMap[missionId]?.ko, lang)}</p>
-                    <div className="flex shrink-0 gap-0.5">
-                      {names.map((name) => (
-                        <span
-                          key={`${section.key}-${missionId}-${name}`}
-                          className={`grid h-4 w-4 place-items-center rounded-full border text-[9px] font-black leading-none ${
-                            userBadgeStyles[name] ?? 'border-slate-300 bg-slate-100 text-slate-700'
-                          }`}
-                        >
-                          {nameInitial(name)}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="py-2 text-center text-[10px] font-bold text-slate-400">
-                  {lang === 'ko' ? '없음' : 'None'}
-                </p>
-              )}
+                    {nameInitial(name)}
+                  </span>
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
+          ))
+        ) : (
+          <p className="py-3 text-center text-xs font-bold text-slate-400">
+            {lang === 'ko' ? '없음' : 'None'}
+          </p>
+        )}
       </div>
     </div>
   )
@@ -2257,11 +2456,11 @@ function TabButton({ active, icon: Icon, label, onClick, variant = 'default' }) 
       <button
         type="button"
         onClick={onClick}
-        className={`flex h-14 min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-1 text-[11px] font-black transition ${
-          active ? 'bg-emerald-500 text-slate-950' : 'text-slate-400 active:bg-slate-100'
+        className={`flex h-12 min-w-0 flex-col items-center justify-center gap-0.5 rounded-lg px-1 text-xs font-medium transition ${
+          active ? 'bg-[#E2E5E1] text-[#4f594c] font-bold' : 'text-slate-400 active:bg-slate-100'
         }`}
       >
-        <Icon size={18} strokeWidth={2.4} />
+        <Icon size={20} strokeWidth={active ? 2.4 : 1.8} />
         <span className="max-w-full truncate leading-none">{label}</span>
       </button>
     )
@@ -2403,10 +2602,201 @@ function WeekPlannerCalendar({
   )
 }
 
+function MobilePlanner({
+  c,
+  lang,
+  days,
+  version,
+  selectedVersion,
+  selectedWeek,
+  selectedDayId,
+  schedule,
+  completed,
+  requiredCounts,
+  scheduledCounts,
+  onSelectDay,
+  onQuickAdd,
+  onRemove,
+  canLoadPrevious,
+  onLoadPreviousWeek,
+  onResetPlan,
+  onPrevWeek,
+  onNextWeek,
+  canPrevWeek,
+  canNextWeek,
+}) {
+  const selectedDay = days.find((day) => day.id === selectedDayId) ?? days[0]
+  const selectedDayMissionIds = schedule[selectedDayId] ?? []
+
+  return (
+    <section className="grid gap-2 lg:hidden">
+      <div className="rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-sm">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onPrevWeek}
+            disabled={!canPrevWeek}
+            className="grid h-7 w-7 shrink-0 place-items-center rounded border border-slate-200 text-slate-500 hover:border-slate-400 disabled:opacity-30"
+          >‹</button>
+          <p className="min-w-0 flex-1 truncate text-xs font-black text-emerald-600">
+            {version.label} · Week {selectedWeek} ·{' '}
+            {formatDateRange(getWeekStartDate(selectedVersion, selectedWeek), addDays(getWeekStartDate(selectedVersion, selectedWeek), 6))}
+          </p>
+          <button
+            type="button"
+            onClick={onNextWeek}
+            disabled={!canNextWeek}
+            className="grid h-7 w-7 shrink-0 place-items-center rounded border border-slate-200 text-slate-500 hover:border-slate-400 disabled:opacity-30"
+          >›</button>
+        </div>
+
+        <h2 className="mt-1 text-base font-black text-slate-950">{c.weekPlanner ?? copy.en.weekPlanner}</h2>
+        <p className="mt-0.5 text-xs text-slate-500">{c.tapHint ?? copy.en.tapHint}</p>
+
+        {/* Day pills */}
+        <div className="mt-3 flex items-center gap-1.5">
+          {days.map((day) => {
+            const dayMissionIds = schedule[day.id] ?? []
+            const completedCount = dayMissionIds.filter((missionId) =>
+              completed[getMissionKey(selectedVersion, selectedWeek, day.id, missionId)],
+            ).length
+            const selected = selectedDayId === day.id
+            return (
+              <button
+                key={day.id}
+                type="button"
+                onClick={() => onSelectDay(day.id)}
+                className={`flex-1 rounded-md py-2 text-center text-xs font-medium transition ${
+                  selected ? 'bg-[#E2E5E1] text-[#7d887b]' : day.rest ? 'text-slate-300' : 'text-slate-400'
+                }`}
+              >
+                <span className="block">{tr(day.label, lang)}</span>
+                <span className="mt-0.5 block text-[10px] font-normal">
+                  {day.rest ? 'REST' : `${completedCount}/${dayMissionIds.length}`}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Divider */}
+        <div className="my-2.5 border-t border-slate-100" />
+
+        {/* Selected day missions */}
+        <h3 className="text-sm font-black text-slate-950">{tr(selectedDay.label, lang)} {c.todayMissions}</h3>
+        <div className="mt-2 grid gap-1.5">
+          {selectedDay.rest ? (
+            <p className="rounded-md bg-slate-50 px-3 py-3 text-center text-xs font-bold text-slate-400">
+              {c.fullRest}
+            </p>
+          ) : selectedDayMissionIds.length === 0 ? (
+            <p className="rounded-md border border-dashed border-slate-200 px-3 py-3 text-center text-xs font-bold text-slate-400">
+              {c.dropHere ?? copy.en.dropHere}
+            </p>
+          ) : (
+            selectedDayMissionIds.map((missionId) => {
+              const mission = missionMap[missionId]
+              const fixed = missionId === 'weekend-review'
+              const complete = completed[getMissionKey(selectedVersion, selectedWeek, selectedDayId, missionId)]
+              const Icon = mission.icon
+              return (
+                <div
+                  key={missionId}
+                  className={`flex items-center justify-between gap-2 rounded-md px-3 py-2.5 ${
+                    complete ? 'bg-green-50' : 'bg-slate-50'
+                  }`}
+                >
+                  <div className="flex min-w-0 items-center gap-2">
+                    <Icon size={16} className={complete ? 'text-green-600' : 'text-slate-500'} />
+                    <span className="min-w-0 truncate text-sm font-medium text-slate-800">{tr(mission.ko, lang)}</span>
+                  </div>
+                  {!fixed && (
+                    <button
+                      type="button"
+                      onClick={() => onRemove(missionId, selectedDayId)}
+                      aria-label={lang === 'ko' ? '제거' : 'Remove'}
+                      className="grid h-6 w-6 shrink-0 place-items-center rounded-full text-slate-400 hover:bg-slate-200 hover:text-slate-600"
+                    >×</button>
+                  )}
+                </div>
+              )
+            })
+          )}
+        </div>
+      </div>
+
+      {/* Activity pool */}
+      <div className="rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-sm">
+        <p className="text-xs font-black text-slate-500">{c.activityPool ?? copy.en.activityPool}</p>
+        <h2 className="mt-0.5 text-base font-black text-slate-950">{c.weekAtGlance}</h2>
+
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={onResetPlan}
+            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-slate-200 px-2 text-xs font-black text-slate-500 transition active:bg-slate-100"
+          >
+            <RotateCcw size={13} />
+            {c.resetPlan ?? copy.en.resetPlan}
+          </button>
+          <button
+            type="button"
+            onClick={onLoadPreviousWeek}
+            disabled={!canLoadPrevious}
+            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-emerald-400 bg-emerald-50 px-2 text-xs font-black text-emerald-700 transition active:scale-[0.98] disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-50 disabled:text-slate-400"
+          >
+            <CalendarCheck size={14} />
+            {c.loadPreviousWeekShort ?? copy.en.loadPreviousWeekShort}
+          </button>
+        </div>
+
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          {Object.entries(requiredCounts).map(([missionId, required]) => {
+            const mission = missionMap[missionId]
+            const scheduled = scheduledCounts[missionId] ?? 0
+            const remaining = Math.max(0, required - scheduled)
+            const Icon = mission.icon
+
+            return (
+              <div key={missionId} className="rounded-lg border border-slate-200 bg-slate-50 p-2.5">
+                <div className="flex items-center gap-1.5">
+                  <div className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg border ${mission.tone}`}>
+                    <Icon size={15} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-xs font-black text-slate-950">{tr(mission.ko, lang)}</p>
+                    <p className="text-[11px] font-bold text-slate-500">
+                      {scheduled}/{required} {c.planned ?? copy.en.planned}
+                    </p>
+                  </div>
+                </div>
+
+                {remaining > 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => onQuickAdd(missionId)}
+                    className="mt-2 inline-flex h-8 w-full items-center justify-center gap-1 rounded-md border border-slate-200 bg-white text-[11px] font-black text-slate-600 active:scale-[0.98]"
+                  >
+                    + {tr(selectedDay.label, lang)}
+                  </button>
+                ) : (
+                  <span className="mt-2 inline-flex h-8 w-full items-center justify-center rounded-md border border-emerald-400 bg-emerald-50 text-[11px] font-black text-emerald-700">
+                    {c.planned ?? copy.en.planned}
+                  </span>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </section>
+  )
+}
+
 function ActivityPool({ c, lang, requiredCounts, scheduledCounts, onQuickAdd, canLoadPrevious, onLoadPreviousWeek, onResetPlan }) {
   return (
-    <aside className="mobile-activity-pool rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-      <div className="mobile-activity-pool-header flex items-start justify-between gap-3">
+    <aside className="hidden rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:block">
+      <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-sm font-black text-slate-500">{c.activityPool ?? copy.en.activityPool}</p>
           <h2 className="mt-1 text-lg font-black text-slate-950">{c.weekAtGlance}</h2>
@@ -2428,13 +2818,13 @@ function ActivityPool({ c, lang, requiredCounts, scheduledCounts, onQuickAdd, ca
         type="button"
         onClick={onLoadPreviousWeek}
         disabled={!canLoadPrevious}
-        className="mobile-activity-pool-load mt-4 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-emerald-400 bg-emerald-50 px-3 text-sm font-black text-emerald-700 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-50 disabled:text-slate-400 disabled:hover:translate-y-0"
+        className="mt-4 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-emerald-400 bg-emerald-50 px-3 text-sm font-black text-emerald-700 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-50 disabled:text-slate-400 disabled:hover:translate-y-0"
       >
         <CalendarCheck size={16} />
         {c.loadPreviousWeek ?? copy.en.loadPreviousWeek}
       </button>
 
-      <div className="mobile-activity-pool-list mt-4 grid gap-2">
+      <div className="mt-4 grid gap-2 lg:grid-cols-4">
         {Object.entries(requiredCounts).map(([missionId, required]) => {
           const mission = missionMap[missionId]
           const scheduled = scheduledCounts[missionId] ?? 0
@@ -2442,20 +2832,20 @@ function ActivityPool({ c, lang, requiredCounts, scheduledCounts, onQuickAdd, ca
           const Icon = mission.icon
 
           return (
-            <div key={missionId} className="mobile-activity-card rounded-lg border border-slate-200 bg-slate-50 p-3">
-              <div className="mobile-activity-card-head flex items-center gap-2">
-                <div className={`mobile-activity-icon grid h-8 w-8 place-items-center rounded-lg border ${mission.tone}`}>
+            <div key={missionId} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <div className="flex items-center gap-2">
+                <div className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg border ${mission.tone}`}>
                   <Icon size={17} />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="mobile-activity-title truncate text-sm font-black text-slate-950">{tr(mission.ko, lang)}</p>
-                  <p className="mobile-activity-count text-xs font-bold text-slate-500">
+                  <p className="truncate text-sm font-black text-slate-950">{tr(mission.ko, lang)}</p>
+                  <p className="text-xs font-bold text-slate-500">
                     {scheduled}/{required} {c.planned ?? copy.en.planned}
                   </p>
                 </div>
               </div>
 
-              <div className="mobile-activity-chips mt-3 flex flex-wrap gap-1.5">
+              <div className="mt-3 flex flex-wrap gap-1.5">
                 {Array.from({ length: remaining }).map((_, index) => (
                   <span
                     key={`${missionId}-${index}`}
@@ -2469,14 +2859,14 @@ function ActivityPool({ c, lang, requiredCounts, scheduledCounts, onQuickAdd, ca
                     onDragStart={(event) => {
                       event.dataTransfer.setData('application/json', JSON.stringify({ missionId, sourceDayId: 'pool' }))
                     }}
-                    className="mobile-activity-chip inline-flex cursor-grab items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-1 text-xs font-black text-slate-600 active:cursor-grabbing"
+                    className="inline-flex cursor-grab items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-1 text-xs font-black text-slate-600 active:cursor-grabbing"
                   >
                     <GripVertical size={12} />
                     {tr(mission.ko, lang)}
                   </span>
                 ))}
                 {remaining === 0 && (
-                  <span className="mobile-activity-chip rounded-full border border-emerald-400 bg-emerald-50 px-2 py-1 text-xs font-black text-emerald-700">
+                  <span className="rounded-full border border-emerald-400 bg-emerald-50 px-2 py-1 text-xs font-black text-emerald-700">
                     {c.planned ?? copy.en.planned}
                   </span>
                 )}
@@ -2489,16 +2879,24 @@ function ActivityPool({ c, lang, requiredCounts, scheduledCounts, onQuickAdd, ca
   )
 }
 
-function CharacterStatus({ c, lang, statTotals, compact = false }) {
+function CharacterStatus({ c, lang, statTotals, compact = false, defaultCollapsed = false }) {
+  const [collapsed, setCollapsed] = useState(defaultCollapsed)
+
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <button
+        type="button"
+        onClick={() => setCollapsed((value) => !value)}
+        className="flex w-full flex-col gap-3 text-left sm:flex-row sm:items-end sm:justify-between"
+      >
         <div>
           <p className="text-sm font-black text-emerald-600">{c.characterStatus}</p>
           <h2 className="mt-1 text-2xl font-black text-slate-950">RPG Status</h2>
         </div>
-      </div>
+        <ChevronDown size={20} className={`shrink-0 text-slate-400 transition ${collapsed ? '' : 'rotate-180'}`} />
+      </button>
 
+      {!collapsed && (
       <div className={`mt-5 grid grid-cols-2 gap-3 ${compact ? 'md:grid-cols-5' : 'md:grid-cols-2 xl:grid-cols-5'}`}>
         {characterStats.map((stat) => {
           const points = statTotals[stat.id] ?? 0
@@ -2525,6 +2923,7 @@ function CharacterStatus({ c, lang, statTotals, compact = false }) {
           )
         })}
       </div>
+      )}
     </section>
   )
 }
@@ -2758,7 +3157,7 @@ function DiaryKnowledgeGraph({ entries, graph, insights, diaryView, lang }) {
   )
 }
 
-function DiaryDashboard({ memos, selectedVersion, selectedWeek, diaryView, lang, onChangeView, onNavigatePeriod, onSelectWeek }) {
+function DiaryDashboard({ memos, selectedVersion, selectedWeek, diaryView, lang, onChangeView, onNavigatePeriod, onSelectWeek, memoValue, onMemoChange, memoTitle, memoHint, memoPlaceholder }) {
   const c = copy[lang]
   const weekEntries = getWeekDiaryEntries(memos, selectedVersion, selectedWeek)
   const monthWeeks = getMonthDiaryEntries(memos, selectedVersion, selectedWeek)
@@ -2766,8 +3165,9 @@ function DiaryDashboard({ memos, selectedVersion, selectedWeek, diaryView, lang,
     () => getPersonalDiaryEntries(memos, selectedVersion, selectedWeek, diaryView),
     [memos, selectedVersion, selectedWeek, diaryView],
   )
-  const diaryGraph = useMemo(() => buildDiaryKnowledgeGraph(diaryEntries), [diaryEntries])
-  const diaryInsights = useMemo(() => buildDiaryInsights(diaryEntries, diaryGraph, lang), [diaryEntries, diaryGraph, lang])
+  const allDiaryEntries = useMemo(() => getAllDiaryEntries(memos), [memos])
+  const diaryGraph = useMemo(() => buildDiaryKnowledgeGraph(allDiaryEntries), [allDiaryEntries])
+  const diaryInsights = useMemo(() => buildDiaryInsights(allDiaryEntries, diaryGraph, lang), [allDiaryEntries, diaryGraph, lang])
   const monthStartWeek = getMonthBlockStartWeek(selectedWeek)
   const monthEndWeek = monthStartWeek + 3
   const monthStartDate = getWeekStartDate(selectedVersion, monthStartWeek)
@@ -2786,6 +3186,25 @@ function DiaryDashboard({ memos, selectedVersion, selectedWeek, diaryView, lang,
 
   return (
     <section className="space-y-4">
+      <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm sm:p-5">
+        <div className="flex items-center gap-1.5">
+          <div className="grid h-6 w-6 shrink-0 place-items-center rounded bg-indigo-50 text-indigo-700">
+            <NotebookPen size={13} />
+          </div>
+          <div className="min-w-0">
+            <h2 className="text-base font-black text-slate-950">{memoTitle}</h2>
+            <p className="text-xs text-slate-500">{memoHint}</p>
+          </div>
+        </div>
+        <textarea
+          value={memoValue}
+          onChange={(event) => onMemoChange(event.target.value)}
+          style={{ height: '72px' }}
+          className="mt-1.5 w-full resize-none rounded-md border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs leading-5 text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-emerald-400 focus:bg-white focus:ring-2 focus:ring-emerald-100"
+          placeholder={memoPlaceholder}
+        />
+      </div>
+
       <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -2976,15 +3395,31 @@ function ProgressDashboard({
 
 
 
-      <CharacterStatus c={c} lang={lang} statTotals={statTotals} />
+      <CharacterStatus c={c} lang={lang} statTotals={statTotals} defaultCollapsed />
       <TrendCharts completed={completed} lang={lang} />
+    </section>
+  )
+}
 
-      <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+function CurriculumCheck({ c, lang, curriculum, completed, onSelect }) {
+  const [collapsed, setCollapsed] = useState(true)
+
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+      <button
+        type="button"
+        onClick={() => setCollapsed((value) => !value)}
+        className="flex w-full items-center justify-between gap-3 text-left"
+      >
         <div>
-          <p className="text-sm font-black text-slate-500">{c.monthlyProgress}</p>
-          <h2 className="mt-1 text-lg font-black text-slate-950">{c.curriculumCheck}</h2>
+          <p className="text-xs font-black text-slate-500">{c.monthlyProgress}</p>
+          <h2 className="mt-0.5 text-sm font-black text-slate-950">{c.curriculumCheck}</h2>
         </div>
-        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <ChevronDown size={18} className={`shrink-0 text-slate-400 transition ${collapsed ? '' : 'rotate-180'}`} />
+      </button>
+
+      {!collapsed && (
+        <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
           {curriculum.map((item) => {
             const stats = getMonthStats(completed, item)
             return (
@@ -2992,27 +3427,27 @@ function ProgressDashboard({
                 key={item.month}
                 type="button"
                 onClick={() => onSelect(item.version, item.startWeek)}
-                className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-left transition hover:-translate-y-0.5 hover:border-slate-400 hover:shadow-md"
+                className="rounded-md border border-slate-200 bg-slate-50 p-3 text-left transition hover:-translate-y-0.5 hover:border-slate-400 hover:shadow-md"
               >
-                <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start justify-between gap-2">
                   <div>
-                    <p className="text-sm font-black text-slate-500">
+                    <p className="text-xs font-black text-slate-500">
                       {c.month} {item.month} · {versions[item.version].label} · {getMonthDateRange(item)}
                     </p>
-                    <h3 className="mt-1 text-lg font-black text-slate-950">{tr(item.title, lang)}</h3>
+                    <h3 className="mt-0.5 text-sm font-black text-slate-950">{tr(item.title, lang)}</h3>
                   </div>
-                  <span className="rounded-full bg-white px-2.5 py-1 text-xs font-black text-slate-600">{stats.percent}%</span>
+                  <span className="rounded-full bg-white px-2 py-0.5 text-xs font-black text-slate-600">{stats.percent}%</span>
                 </div>
-                <ProgressBar percent={stats.percent} className="mt-4" />
-                <p className="mt-2 text-sm font-bold text-slate-500">
+                <ProgressBar percent={stats.percent} className="mt-2 h-2" />
+                <p className="mt-1.5 text-xs font-bold text-slate-500">
                   {stats.done}/{stats.total} {c.missions}
                 </p>
               </button>
             )
           })}
         </div>
-      </div>
-    </section>
+      )}
+    </div>
   )
 }
 
@@ -3035,10 +3470,9 @@ function TimePill({ icon: Icon, label }) {
 
 function CurriculumToc({ curriculum, selectedVersion, selectedWeek, lang, isOpen, onToggle, onSelectMonth }) {
   const c = copy[lang]
-  const columns = ['v1', 'v2', 'v3'].map((versionKey) => ({
-    versionKey,
-    items: curriculum.filter((item) => item.version === versionKey),
-  }))
+  const [activeMonth, setActiveMonth] = useState(curriculum[0]?.month)
+  const items = [...curriculum].sort((a, b) => a.month - b.month)
+  const activeItem = items.find((item) => item.month === activeMonth) ?? items[0]
 
   return (
     <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
@@ -3057,68 +3491,68 @@ function CurriculumToc({ curriculum, selectedVersion, selectedWeek, lang, isOpen
         </button>
       </div>
 
-      {isOpen && <div className="mt-5 grid gap-4 md:grid-cols-3">
-        {columns.map(({ versionKey, items }, columnIndex) => {
-          const versionInfo = versions[versionKey]
-          return (
-            <div key={versionKey} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-              <div className="mb-3 flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm font-black text-slate-950">{versionInfo.label}</p>
-                  <p className="text-sm font-bold text-slate-500">{tr(versionInfo.title, lang)}</p>
-                </div>
-                <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-black text-slate-500">
-                  {columnIndex === 0 ? c.start : columnIndex === 1 ? c.create : c.independent}
-                </span>
-              </div>
+      {isOpen && (
+        <div className="mt-5">
+          {/* Month picker */}
+          <div className="grid grid-cols-6 gap-1.5">
+            {items.map((item) => (
+              <button
+                key={item.month}
+                type="button"
+                onClick={() => setActiveMonth(item.month)}
+                className={`rounded-md py-2 text-center text-xs font-black transition ${
+                  activeMonth === item.month ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-500'
+                }`}
+              >
+                {c.month} {item.month}
+              </button>
+            ))}
+          </div>
 
-              <div className="grid gap-3">
-                {items.map((item) => {
-                  const active = item.version === selectedVersion && selectedWeek >= item.startWeek && selectedWeek <= item.startWeek + 3
-                  return (
-                    <button
-                      key={item.month}
-                      type="button"
-                      onClick={() => onSelectMonth(item)}
-                      className={`rounded-lg border bg-white p-4 text-left transition hover:-translate-y-0.5 hover:shadow-md ${
-                        active ? 'border-emerald-400 ring-2 ring-emerald-100' : 'border-slate-200'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="text-sm font-black text-slate-500">
-                            {c.month} {item.month} · W{item.startWeek}-{item.startWeek + 3} · {getMonthDateRange(item)}
-                          </p>
-                          <h3 className="mt-1 text-lg font-black text-slate-950">{tr(item.title, lang)}</h3>
-                        </div>
-                        <span className="rounded-full bg-slate-900 px-2.5 py-1 text-xs font-black text-white">{versionInfo.label}</span>
-                      </div>
-                      <p className="mt-3 text-sm font-bold leading-6 text-slate-600">{tr(item.goal, lang)}</p>
-                      <div className="mt-3 flex flex-wrap gap-1.5">
-                        {(item.statFocus ?? []).map((statId) => {
-                          const stat = statMap[statId]
-                          return (
-                            <span key={statId} className={`inline-flex items-center gap-1 rounded-full bg-gradient-to-r ${stat.color} px-2.5 py-1 text-xs font-black text-white shadow-sm`}>
-                              ↑ {tr(stat.label, lang)}
-                            </span>
-                          )
-                        })}
-                      </div>
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {item.topics.map((topic) => (
-                          <span key={tr(topic, 'en')} className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-slate-500">
-                            {tr(topic, lang)}
-                          </span>
-                        ))}
-                      </div>
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          )
-        })}
-      </div>}
+          {activeItem && (() => {
+            const item = activeItem
+            const versionInfo = versions[item.version]
+            const active = item.version === selectedVersion && selectedWeek >= item.startWeek && selectedWeek <= item.startWeek + 3
+            return (
+              <button
+                type="button"
+                onClick={() => onSelectMonth(item)}
+                className={`mt-3 w-full rounded-lg border bg-slate-50 p-4 text-left transition hover:-translate-y-0.5 hover:shadow-md ${
+                  active ? 'border-emerald-400 ring-2 ring-emerald-100' : 'border-slate-200'
+                }`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-black text-slate-500">
+                      {c.month} {item.month} · W{item.startWeek}-{item.startWeek + 3} · {getMonthDateRange(item)}
+                    </p>
+                    <h3 className="mt-1 text-lg font-black text-slate-950">{tr(item.title, lang)}</h3>
+                  </div>
+                  <span className="rounded-full bg-slate-900 px-2.5 py-1 text-xs font-black text-white">{versionInfo.label}</span>
+                </div>
+                <p className="mt-3 text-sm font-bold leading-6 text-slate-600">{tr(item.goal, lang)}</p>
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {(item.statFocus ?? []).map((statId) => {
+                    const stat = statMap[statId]
+                    return (
+                      <span key={statId} className={`inline-flex items-center gap-1 rounded-full bg-gradient-to-r ${stat.color} px-2.5 py-1 text-xs font-black text-white shadow-sm`}>
+                        ↑ {tr(stat.label, lang)}
+                      </span>
+                    )
+                  })}
+                </div>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {item.topics.map((topic) => (
+                    <span key={tr(topic, 'en')} className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-slate-500">
+                      {tr(topic, lang)}
+                    </span>
+                  ))}
+                </div>
+              </button>
+            )
+          })()}
+        </div>
+      )}
     </section>
   )
 }
@@ -3169,12 +3603,14 @@ function ActivitySummary({ days, selectedVersion, selectedWeek, selectedDayId, l
 }
 
 function AllUsersOverview({ allUsersData, lang }) {
+  const [expandedUserId, setExpandedUserId] = useState(null)
+
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
       <p className="text-sm font-black text-emerald-600">All Members</p>
       <h2 className="mt-1 text-2xl font-black text-slate-950">전체 멤버 현황</h2>
 
-      <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mt-5 grid grid-cols-2 gap-3 xl:grid-cols-4">
         {allUsersData.map(({ user, state: userState }) => {
           const completed = userState.completed ?? {}
           const userTotalMissions = Object.keys(versions).reduce((sum, vk) =>
@@ -3191,49 +3627,56 @@ function AllUsersOverview({ allUsersData, lang }) {
           const levelIndex = levels.reduce((a, l, i) => (xp >= l.min ? i : a), 0)
           const level = levels[levelIndex]
           const statTotals = getStatTotals(completed)
+          const expanded = expandedUserId === user.id
 
           return (
-            <div key={user.id} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <div className="grid h-9 w-9 place-items-center rounded-full bg-slate-900 text-sm font-black text-white">
+            <div key={user.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <button
+                type="button"
+                onClick={() => setExpandedUserId(expanded ? null : user.id)}
+                className="flex w-full flex-col gap-1.5 text-left"
+              >
+                <div className="flex min-w-0 items-center gap-1.5">
+                  <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-slate-900 text-xs font-black text-white">
                     {user.name[0]}
                   </div>
-                  <div>
-                    <p className="text-base font-black text-slate-950">{user.name}</p>
-                    <p className="text-xs font-bold text-slate-500">{tr(level.name, lang)}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-black text-slate-950">{user.name}</p>
+                    <p className="truncate text-[10px] font-bold text-slate-500">{tr(level.name, lang)}</p>
                   </div>
                 </div>
-                <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-sm font-black text-emerald-700">{xp} XP</span>
-              </div>
+                <span className="inline-flex w-fit shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-black text-emerald-700">{xp} XP</span>
+              </button>
 
-              <div className="mt-4">
-                <div className="flex justify-between text-xs font-bold text-slate-500 mb-1">
+              <div className="mt-3">
+                <div className="flex justify-between text-[11px] font-bold text-slate-500 mb-1">
                   <span>전체 진행률</span>
                   <span>{percent}%</span>
                 </div>
-                <div className="h-2.5 overflow-hidden rounded-full bg-slate-200">
+                <div className="h-2 overflow-hidden rounded-full bg-slate-200">
                   <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${percent}%` }} />
                 </div>
-                <p className="mt-1 text-xs font-bold text-slate-400">{doneMissions}/{userTotalMissions} 미션</p>
+                <p className="mt-1 text-[11px] font-bold text-slate-400">{doneMissions}/{userTotalMissions} 미션</p>
               </div>
 
-              <div className="mt-4 grid gap-1.5">
-                {characterStats.map((stat) => {
-                  const pts = statTotals[stat.id] ?? 0
-                  const maxPts = userMaxStats[stat.id] || 1
-                  const pct = Math.min(100, Math.round((pts / maxPts) * 100))
-                  return (
-                    <div key={stat.id} className="flex items-center gap-2">
-                      <span className="w-12 shrink-0 text-[11px] font-black text-slate-500">{tr(stat.label, lang)}</span>
-                      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-200">
-                        <div className={`h-full rounded-full bg-gradient-to-r ${stat.color}`} style={{ width: `${pct}%` }} />
+              {expanded && (
+                <div className="mt-3 grid gap-1.5">
+                  {characterStats.map((stat) => {
+                    const pts = statTotals[stat.id] ?? 0
+                    const maxPts = userMaxStats[stat.id] || 1
+                    const pct = Math.min(100, Math.round((pts / maxPts) * 100))
+                    return (
+                      <div key={stat.id} className="flex items-center gap-2">
+                        <span className="w-12 shrink-0 text-[11px] font-black text-slate-500">{tr(stat.label, lang)}</span>
+                        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-200">
+                          <div className={`h-full rounded-full bg-gradient-to-r ${stat.color}`} style={{ width: `${pct}%` }} />
+                        </div>
+                        <span className="w-6 shrink-0 text-right text-[11px] font-black text-slate-400">{pts}</span>
                       </div>
-                      <span className="w-6 shrink-0 text-right text-[11px] font-black text-slate-400">{pts}</span>
-                    </div>
-                  )
-                })}
-              </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           )
         })}
@@ -3258,11 +3701,11 @@ function getWeekStatPoints(completed, vk, week) {
 
 function StatBarChart({ title, subtitle, xLabels, dataPoints, lang, fixedMax }) {
   const W = 600
-  const H = 180
-  const padL = 36
+  const H = 240
+  const padL = 50
   const padR = 12
   const padT = 12
-  const padB = 28
+  const padB = 36
   const chartW = W - padL - padR
   const chartH = H - padT - padB
   const n = xLabels.length
@@ -3281,28 +3724,28 @@ function StatBarChart({ title, subtitle, xLabels, dataPoints, lang, fixedMax }) 
   const gridLines = [0, 0.25, 0.5, 0.75, 1].map((f) => Math.round(maxVal * f))
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-      <p className="text-sm font-black text-emerald-600">{subtitle}</p>
-      <h2 className="mt-1 text-xl font-black text-slate-950">{title}</h2>
+    <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+      <p className="text-xs font-black text-emerald-600">{subtitle}</p>
+      <h2 className="mt-0.5 text-sm font-black text-slate-950">{title}</h2>
 
       {/* Legend */}
-      <div className="mt-3 flex flex-wrap gap-3">
+      <div className="mt-2 flex flex-wrap gap-2">
         {characterStats.map((s) => (
-          <span key={s.id} className="flex items-center gap-1.5 text-xs font-bold text-slate-600">
-            <span className="inline-block h-2 w-5 rounded-full" style={{ backgroundColor: statLineColors[s.id] }} />
+          <span key={s.id} className="flex items-center gap-1 text-[11px] font-bold text-slate-600">
+            <span className="inline-block h-1.5 w-3.5 rounded-full" style={{ backgroundColor: statLineColors[s.id] }} />
             {tr(s.label, lang)}
           </span>
         ))}
       </div>
 
-      <svg viewBox={`0 0 ${W} ${H}`} className="mt-3 w-full" style={{ fontFamily: 'system-ui, sans-serif' }}>
+      <svg viewBox={`0 0 ${W} ${H}`} className="mt-2 w-full" style={{ fontFamily: 'system-ui, sans-serif' }}>
         {/* Grid lines */}
         {gridLines.map((v) => {
           const y = toY(v)
           return (
             <g key={v}>
               <line x1={padL} y1={y} x2={W - padR} y2={y} stroke="#e2e8f0" strokeWidth="1" />
-              <text x={padL - 4} y={y} textAnchor="end" dominantBaseline="middle" fill="#94a3b8" fontSize="9">{v}</text>
+              <text x={padL - 6} y={y} textAnchor="end" dominantBaseline="middle" fill="#64748b" fontSize="18" fontWeight="600">{v}</text>
             </g>
           )
         })}
@@ -3326,10 +3769,10 @@ function StatBarChart({ title, subtitle, xLabels, dataPoints, lang, fixedMax }) 
           <text
             key={stat.id}
             x={statLabelX(statIndex)}
-            y={H - 6}
+            y={H - 10}
             textAnchor="middle"
-            fill="#94a3b8"
-            fontSize="9"
+            fill="#475569"
+            fontSize="17"
             fontWeight="700"
           >
             {tr(stat.label, lang)}
