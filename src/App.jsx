@@ -1834,7 +1834,7 @@ export default function App() {
       onTouchEnd={handleTouchEnd}
     >
       <section className="mx-auto w-full max-w-[96rem] flex-1 space-y-2 overflow-y-auto px-3 pb-4 pt-[calc(env(safe-area-inset-top)+0.5rem)] sm:px-6 sm:py-5 lg:px-8 2xl:max-w-[104rem]">
-        <div className="mobile-home-card relative rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-sm">
+        <div className="mobile-home-card relative rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-sm lg:hidden">
           {/* Row 1: avatar (user switch) + name + lang + level pill */}
           <div className="flex items-center justify-between gap-2">
             <div className="flex min-w-0 items-center gap-3">
@@ -1915,6 +1915,126 @@ export default function App() {
           />
         </div>
         )}
+
+        <header className="desktop-hero hidden gap-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:grid md:grid-cols-[1.15fr_0.75fr_0.95fr] md:items-center">
+          <div>
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-sm font-semibold text-emerald-700">
+              <Sparkles size={16} />
+              {c.questBadge}
+            </div>
+            <h1 className="text-3xl font-black tracking-normal text-slate-950 sm:text-5xl">Life Game</h1>
+            <div className="mt-4">
+              <p className="mb-2 text-[11px] font-black uppercase tracking-widest text-slate-400">이번 주 획득 스탯</p>
+              <div className="grid gap-2">
+                {characterStats.map((stat) => {
+                  const weekPts = weeklyStatTotals[stat.id] ?? 0
+                  const maxWeekPts = 50
+                  const pct = Math.min(100, Math.round((weekPts / maxWeekPts) * 100))
+                  return (
+                    <div key={stat.id} className="flex items-center gap-2">
+                      <span className="w-14 shrink-0 text-xs font-black text-slate-500">{tr(stat.label, lang)}</span>
+                      <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
+                        <div className={`h-full rounded-full bg-gradient-to-r ${stat.color} transition-all`} style={{ width: `${pct}%` }} />
+                      </div>
+                      <span className="w-6 shrink-0 text-right text-xs font-black text-slate-400">{weekPts}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+
+          <StatRadar lang={lang} c={c} statTotals={statTotals} maxStatTotals={maxStatTotals} overallPower={overallPower} />
+
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0">
+                <p className="text-xs font-black uppercase tracking-wide text-slate-500">{c.activeMember ?? copy.en.activeMember}</p>
+                <div className="mt-2 flex min-w-0 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3">
+                  <UserRound size={15} className="shrink-0 text-emerald-600" />
+                  <select
+                    value={currentUserId}
+                    onChange={(event) => switchUser(event.target.value)}
+                    className="h-9 min-w-28 bg-transparent text-sm font-black text-slate-950 outline-none"
+                  >
+                    {users.map((user) => (
+                      <option key={user.id} value={user.id}>
+                        {user.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 rounded-lg border border-slate-200 bg-white p-1">
+                {['ko', 'en'].map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => updateState({ lang: option })}
+                    className={`h-8 rounded-md px-3 text-xs font-black transition ${
+                      lang === option ? 'bg-slate-950 text-white' : 'text-slate-500 hover:bg-slate-100'
+                    }`}
+                  >
+                    {option.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-slate-500">{c.currentLevel}</p>
+                <p className="mt-1 text-xl font-black text-slate-950">{tr(activeLevel.name, lang)}</p>
+              </div>
+              <div className="grid h-12 w-12 place-items-center rounded-lg bg-slate-950 text-white">
+                <Trophy size={24} />
+              </div>
+            </div>
+            <div className="mt-4 h-3 overflow-hidden rounded-full bg-slate-200">
+              <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${levelProgress}%` }} />
+            </div>
+            <div className="mt-2 flex justify-between text-sm text-slate-500">
+              <span>{totalXp} XP</span>
+              <span>{nextLevel ? c.untilXp(nextLevel.min, levelProgress) : c.highestLevel}</span>
+            </div>
+          </div>
+        </header>
+
+        {!isNativeApp && <nav id="desktop-tab-nav" className="hidden gap-2 rounded-lg border border-slate-200 bg-white p-2 shadow-sm lg:flex lg:w-fit">
+          <TabButton
+            active={state.activeTab === 'quest' && !state.showToc}
+            icon={Compass}
+            label={c.quest}
+            onClick={() => updateState({ activeTab: 'quest', showToc: false })}
+          />
+          <TabButton
+            active={state.activeTab === 'progress'}
+            icon={Gauge}
+            label={c.progress}
+            onClick={() => updateState({ activeTab: 'progress' })}
+          />
+          <TabButton
+            active={state.activeTab === 'quest' && state.showToc}
+            icon={ListTree}
+            label={c.roadmap}
+            onClick={() => updateState({ showToc: !state.showToc, activeTab: 'quest' })}
+          />
+          <TabButton
+            active={state.activeTab === 'diary'}
+            icon={NotebookPen}
+            label={c.diary ?? copy.en.diary}
+            onClick={() => updateState({ activeTab: 'diary' })}
+          />
+        </nav>}
+
+
+        <div className="hidden sm:block">
+          <CharacterStatus
+            c={c}
+            lang={lang}
+            statTotals={statTotals}
+            compact
+          />
+        </div>
 
         {state.activeTab === 'quest' ? (
           <>
@@ -2005,6 +2125,13 @@ export default function App() {
                   ))}
                 </div>
 
+                {/* Desktop stats */}
+                <div className="mt-3 hidden gap-3 sm:grid sm:grid-cols-3">
+                  <Stat label={c.weekComplete} value={`${weekCompleted}/${weeklyMissionCount}`} />
+                  <Stat label={c.selectedDay} value={selectedDay.rest ? c.rest : `${dayCompleted}/${dayMissions.length}`} />
+                  <Stat label={c.totalXp} value={`${totalXp}`} />
+                </div>
+
                 {/* Divider */}
                 <div className="my-2.5 border-t border-slate-100" />
 
@@ -2013,7 +2140,21 @@ export default function App() {
                   <h2 className="text-base font-black text-slate-950">
                     {selectedDay.rest ? c.todayRest : c.todayMissions}
                   </h2>
+                  <p className="mission-day-plan hidden max-w-2xl text-xs leading-4 text-slate-500 sm:block">{tr(selectedDayPlan, lang)}</p>
                 </div>
+
+                <WeekPlannerCalendar
+                  c={c}
+                  days={days}
+                  lang={lang}
+                  schedule={currentWeekSchedule}
+                  completed={state.completed}
+                  selectedVersion={state.selectedVersion}
+                  selectedWeek={state.selectedWeek}
+                  selectedDayId={selectedDay.id}
+                  onSelectDay={(dayId) => updateState({ selectedDay: dayId })}
+                  onDropMission={moveMissionToDay}
+                />
 
                 {selectedDay.rest ? (
                   <div className="mt-5 rounded-lg border border-slate-200 bg-slate-50 p-6 text-center">
@@ -2070,6 +2211,17 @@ export default function App() {
                     })}
                   </div>
                 )}
+
+              <ActivityPool
+                c={c}
+                lang={lang}
+                requiredCounts={requiredCounts}
+                scheduledCounts={scheduledCounts}
+                onQuickAdd={(missionId) => moveMissionToDay({ missionId, sourceDayId: 'pool', targetDayId: selectedDay.id })}
+                canLoadPrevious={Boolean(previousWeekRef)}
+                onLoadPreviousWeek={loadPreviousWeekPlan}
+                onResetPlan={resetCurrentPlan}
+              />
             </div>
           </section>
         </section>
@@ -2173,7 +2325,7 @@ export default function App() {
         )}
       </section>
       {!isNativeApp && (
-        <nav className="mobile-bottom-tabs shrink-0 border-t border-slate-200 bg-white/95 px-3 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] pt-2 shadow-[0_-16px_34px_rgba(0,0,0,0.08)] backdrop-blur-xl">
+        <nav className="mobile-bottom-tabs shrink-0 border-t border-slate-200 bg-white/95 px-3 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] pt-2 shadow-[0_-16px_34px_rgba(0,0,0,0.08)] backdrop-blur-xl lg:hidden">
           <div className="mx-auto grid max-w-md grid-cols-4 gap-1">
             <TabButton variant="bottom" active={state.activeTab === 'quest' && !state.showToc} icon={Compass} label={c.quest} onClick={() => updateState({ activeTab: 'quest', showToc: false })} />
             <TabButton variant="bottom" active={state.activeTab === 'plan'} icon={CalendarDays} label={c.plan ?? copy.en.plan} onClick={() => updateState({ activeTab: 'plan' })} />
